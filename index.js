@@ -3,7 +3,7 @@
 // Imports dependencies and set up http server
 const express = require('express');
 const  bodyParser = require('body-parser');
-var  app = express(); // creates express http server
+const  app = express().use(bodyParser.json()); // creates express http server
 var path = require("path")
 
 //app.use(express.static(path.join(__dirname, 'Regna')));
