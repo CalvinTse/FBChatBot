@@ -6,14 +6,19 @@ const  bodyParser = require('body-parser');
 const  app = express().use(bodyParser.json()); // creates express http server
 var path = require("path")
 
-//app.use(express.static(path.join(__dirname, 'Regna')));
+app.use(express.static(path.join(__dirname, 'Regna')));
 
 // Sets server port and logs message on success
 app.listen(process.env.PORT || 9000, () => console.log('webhook is listening'));
 
+app.get('/qwe',  function(req, res){
+	console.log("HELLO")
+	res.send("HELLO WORLD")
+});
+
 app.get('/', function(req, res){
-  console.log('Hello World');
-  res.send('Hello World');
+	//console.log("HELLO")
+	res.render("index.html")
 });
 
 //app.use('/Regna', express.static(__dirname + '/Regna'));
