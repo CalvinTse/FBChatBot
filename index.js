@@ -6,6 +6,7 @@ const  bodyParser = require('body-parser');
 const  app = express().use(bodyParser.json()); // creates express http server
 var path = require("path")
 var mysql = require('mysql')
+var request = require("request")
 
 var con = mysql.createConnection({
   host: "chatdbinstance.cdye1p7zziwn.us-east-2.rds.amazonaws.com",
