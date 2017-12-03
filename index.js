@@ -5,6 +5,39 @@ const express = require('express');
 const  bodyParser = require('body-parser');
 const  app = express().use(bodyParser.json()); // creates express http server
 var path = require("path")
+var mysql = require('mysql')
+
+var con = mysql.createConnection({
+  host: "chatdbinstance.cdye1p7zziwn.us-east-2.rds.amazonaws.com",
+  user: "admin",
+  password: "calvin1811",
+  port: "3306", 
+  database: "ChatDB"
+});
+
+con.connect(function(err) {
+	if (err) throw err;
+	console.log("Connected!");
+});
+
+con.query("SHOW TABLES LIKE \'MICROWAVE_TIME\'", function (err, results, fields) {
+if (err) throw err;
+	if(results.length == 1){
+		console.log("TABLE EXISTS")
+	} else {
+		var sql = "CREATE TABLE MICROWAVE_TIME (name VARCHAR(255), time VARCHAR(255))";
+		con.query(sql, function (errCreate, result) {
+		if (errCreate) throw errCreate;
+			console.log("Table created");
+		});
+	}
+});
+
+con.end(function(err) {
+	if (err) throw err;
+	console.log("Closed Connection")
+});
+
 
 app.use(express.static(path.join(__dirname, 'Regna')));
 
@@ -41,6 +74,10 @@ app.post('/webhook', (req, res) => {
 		//Gets the sender PSID
 		let sender_psid = webhookEvent.sender.id;
 		console.log('Sender PSID: ' + sender_psid);
+		
+		 if (webhookEvent.message) {
+				handleMessage(sender_psid, webhookEvent.message);        
+		}
     });
 
     // Returns a '200 OK' response to all requests
@@ -83,7 +120,17 @@ app.get('/webhook', (req, res) => {
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
-
+	  let response;
+	  
+	  // Checks if the message contains text
+	  if (received_message.text) {    
+		// Create the payload for a basic text message, which
+		// will be added to the body of our request to the Send API
+		response = {
+		  "text": "You sent the message: '${received_message.text}'. Now send me an attachment!"
+		}
+	  }
+	   callSendAPI(sender_psid, response);   
 }
 
 // Handles messaging_postbacks events
@@ -93,5 +140,25 @@ function handlePostback(sender_psid, received_postback) {
 
 // Sends response messages via the Send API
 function callSendAPI(sender_psid, response) {
+  // Construct the message body
+  let request_body = {
+    "recipient": {
+      "id": sender_psid
+    },
+    "message": response
+  }
   
+    // Send the HTTP request to the Messenger Platform
+	  request({
+		"uri": "https://graph.facebook.com/v2.6/me/messages",
+		"qs": { "access_token": "EAACSGKoj1PkBALlvGcLdgvERHXkq1PdC3ZBAUZB5w08yiq36X6ywqlwoBupYwPTR6jLXeIZCMltUZA6za7zKbZBiFf6RJgXF0Izdc0yPZBKqZCWZB5am8kjdy7qHrl3Jv4EPIaWre50vIwL4pdixBnkUUIZBIEZCwYNjuMRU3QaVZAFlOHRNEdohI4C" },
+		"method": "POST",
+		"json": request_body
+	  }, (err, res, body) => {
+		if (!err) {
+		  console.log('message sent!')
+		} else {
+		  console.error("Unable to send message:" + err);
+		}
+	  }); 
 }
