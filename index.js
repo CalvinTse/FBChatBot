@@ -7,7 +7,6 @@ const app = express().use(bodyParser.json()); // creates express http server
 var path = require("path")
 var mysql = require('mysql')
 var request = require("request")
-var nba = require('nba')
 var fetch = require('node-fetch')
 
 var con = mysql.createConnection({
@@ -187,7 +186,7 @@ app.get('/webhook', (req, res) => {
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
     let response;
-
+	var userGameList;
     // Checks if the message contains text
 	getUserTeams(function(result) {
 		console.log("User Teams: " + result)
