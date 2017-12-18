@@ -43,16 +43,19 @@ function setUserSubs(){
 	});
 }
 
-function getUserSubs(){
+function getUserTeams(callback){
 	con.query("SELECT * FROM USER_SUBS where name = \'TEST\'", function(err, results, fields) {
 		if (err) throw err;
 		if (results.length > 0) {
 			var userTeams = []
+			
 			for (var i = 0; i < results.length; i++){
 				userTeams.push(results[i].playerID)
 			}
-			console.log("Returned Rows: " + userTeams);
-			return userTeams
+			//console.log("Returned Rows: " + userTeams);
+			//getGameScores(date, userTeams, gameList)
+			//console.log(gameList)
+			callback(userTeams)
 		} else {
 			console.log("NO ROWS RETRIEVED");
 		}
@@ -60,35 +63,33 @@ function getUserSubs(){
 }
 
 //Gets the scoreboard for games happening on the date specified in for YYYYMMDD
-function getGameScores(date){
+function getGameScores(date, teams, callback){
 	fetch(`http://data.nba.net/data/10s/prod/v1/${date}/scoreboard.json`)
 	.then(response => {
 		response.json().then(json => {
-			console.log("Today's Scores: ")
-			var gameScores = [];
+			//console.log("Today's Scores: ")
+			var gameScores = []
 			for(var i = 0; i < json.games.length; i++){
 				var hTeamCode = json.games[i].hTeam.triCode
 				var aTeamCode = json.games[i].vTeam.triCode
 				var homeTeamScore = parseInt(json.games[i].hTeam.score)
 				var awayTeamScore = parseInt(json.games[i].vTeam.score)
 				
-				if(hTeamCode == 'TOR' || aTeamCode == 'TOR' ){
+				if(teams.indexOf(hTeamCode) >= 0 || teams.indexOf(aTeamCode) >= 0){
 					if(homeTeamScore > awayTeamScore){
-						//console.log(hTeamCode+ ": " + homeTeamScore + "  " +  aTeamCode + ": " + awayTeamScore)
 						gameScores.push(hTeamCode+ ": " + homeTeamScore + "  " +  aTeamCode + ": " + awayTeamScore)
 					} else {
-						//console.log(aTeamCode + ": " + awayTeamScore + "  " + hTeamCode + ": " + homeTeamScore)
 						gameScores.push(aTeamCode + ": " + awayTeamScore + "  " + hTeamCode + ": " + homeTeamScore)
 					}
 				}
 			}
-			console.log(gameScores)
+			//console.log(gameScores)
+			callback(gameScores)
 		});
 	 }) .catch(error => {
 		console.log(error);
 	 });
 }
-
 
 app.use(express.static(path.join(__dirname, 'Regna')));
 
@@ -96,7 +97,22 @@ app.use(express.static(path.join(__dirname, 'Regna')));
 app.listen(process.env.PORT || 9000, () => console.log('webhook is listening'));
 
 app.get('/nba', function(req, res) {
-	getUserSubs()
+	var userGameList;
+	getUserTeams(function(result) {
+		console.log("User Teams: " + result)
+		getGameScores("20171215", result, function(games){
+			userGameList = games
+			var gameListFormat
+			for(var i = 0; i < userGameList.length; i++){
+				if(i == 0){
+					gameListFormat = "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
+				} else {
+					gameListFormat += "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
+				}
+			}
+			console.log(gameListFormat)
+		});
+	});
 });
 
 app.get('/', function(req, res) {
@@ -173,14 +189,29 @@ function handleMessage(sender_psid, received_message) {
     let response;
 
     // Checks if the message contains text
-    if (received_message.text) {
-        // Create the payload for a basic text message, which
-        // will be added to the body of our request to the Send API
-        response = {
-            "text": "You sent the message: " + received_message.text + ". Now send me an attachment!"
-        }
-    }
-    callSendAPI(sender_psid, response);
+	getUserTeams(function(result) {
+		console.log("User Teams: " + result)
+		getGameScores("20171217", result, function(games){
+			userGameList = games
+			var gameListFormat
+			for(var i = 0; i < userGameList.length; i++){
+				if(i == 0){
+					gameListFormat = "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
+				} else {
+					gameListFormat += "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
+				}
+			}
+			if (received_message.text) {
+				// Create the payload for a basic text message, which
+				// will be added to the body of our request to the Send API
+				response = {
+					//"text": "You sent the message: " + received_message.text + ". Now send me an attachment!"
+					"text": gameListFormat
+				}
+			}
+			callSendAPI(sender_psid, response);
+		});
+	});
 }
 
 // Handles messaging_postbacks events
@@ -191,6 +222,7 @@ function handlePostback(sender_psid, received_postback) {
 // Sends response messages via the Send API
 function callSendAPI(sender_psid, response) {
     // Construct the message body
+	
 	console.log("SenderId: " + sender_psid)
     let request_body = {
         "recipient": {
