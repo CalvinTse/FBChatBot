@@ -18,12 +18,7 @@ var con = mysql.createConnection({
     database: "ChatDB"
 });
 
-function getUserInfo(){
-	con.connect(function(err) {
-		if (err) throw err;
-		console.log("Connected!");
-	});
-
+function createTables(){
 	con.query("SHOW TABLES LIKE \'USER_SUBS\'", function(err, results, fields) {
 		if (err) throw err;
 		if (results.length == 1) {
@@ -36,12 +31,62 @@ function getUserInfo(){
 			});
 		}
 	});
+}
 
-	con.end(function(err) {
+function setUserSubs(){
+	var query = "INSERT INTO USER_SUBS (name, playerID) VALUES ?"
+	var values = [['TEST', 'TOR'], ['TEST', 'ATL']]
+	
+	con.query(query, [values], function(err, results, fields) {
 		if (err) throw err;
-		console.log("Closed Connection")
+		console.log("INSERTED " + results.affectedRows + " ROWS")
 	});
+}
 
+function getUserSubs(){
+	con.query("SELECT * FROM USER_SUBS where name = \'TEST\'", function(err, results, fields) {
+		if (err) throw err;
+		if (results.length > 0) {
+			var userTeams = []
+			for (var i = 0; i < results.length; i++){
+				userTeams.push(results[i].playerID)
+			}
+			console.log("Returned Rows: " + userTeams);
+			return userTeams
+		} else {
+			console.log("NO ROWS RETRIEVED");
+		}
+	});
+}
+
+//Gets the scoreboard for games happening on the date specified in for YYYYMMDD
+function getGameScores(date){
+	fetch(`http://data.nba.net/data/10s/prod/v1/${date}/scoreboard.json`)
+	.then(response => {
+		response.json().then(json => {
+			console.log("Today's Scores: ")
+			var gameScores = [];
+			for(var i = 0; i < json.games.length; i++){
+				var hTeamCode = json.games[i].hTeam.triCode
+				var aTeamCode = json.games[i].vTeam.triCode
+				var homeTeamScore = parseInt(json.games[i].hTeam.score)
+				var awayTeamScore = parseInt(json.games[i].vTeam.score)
+				
+				if(hTeamCode == 'TOR' || aTeamCode == 'TOR' ){
+					if(homeTeamScore > awayTeamScore){
+						//console.log(hTeamCode+ ": " + homeTeamScore + "  " +  aTeamCode + ": " + awayTeamScore)
+						gameScores.push(hTeamCode+ ": " + homeTeamScore + "  " +  aTeamCode + ": " + awayTeamScore)
+					} else {
+						//console.log(aTeamCode + ": " + awayTeamScore + "  " + hTeamCode + ": " + homeTeamScore)
+						gameScores.push(aTeamCode + ": " + awayTeamScore + "  " + hTeamCode + ": " + homeTeamScore)
+					}
+				}
+			}
+			console.log(gameScores)
+		});
+	 }) .catch(error => {
+		console.log(error);
+	 });
 }
 
 
@@ -51,24 +96,7 @@ app.use(express.static(path.join(__dirname, 'Regna')));
 app.listen(process.env.PORT || 9000, () => console.log('webhook is listening'));
 
 app.get('/nba', function(req, res) {
-	//getUserInfo()
-    var player = nba.findPlayer("Kyle Lowry");
-    var jsonReturn
-    //console.log(player)
-    /*nba.stats.playerSplits({
-        PlayerID: player.playerId,
-        Season: '2017-18',
-		LastNGames: '1'
-    }).then(r => console.log(r.overallPlayerDashboard[0]));*/
-	fetch("http://data.nba.net/data/10s/prod/v1/20171215/scoreboard.json")
-	//fetch("https://maps.googleapis.com/maps/api/geocode/json?address=Florence")
-	.then(response => {
-		response.json().then(json => {
-		  console.log(json.games[0]);
-		});
-	 }) .catch(error => {
-		console.log(error);
-	 });
+	getUserSubs()
 });
 
 app.get('/', function(req, res) {
@@ -163,6 +191,7 @@ function handlePostback(sender_psid, received_postback) {
 // Sends response messages via the Send API
 function callSendAPI(sender_psid, response) {
     // Construct the message body
+	console.log("SenderId: " + sender_psid)
     let request_body = {
         "recipient": {
             "id": sender_psid
