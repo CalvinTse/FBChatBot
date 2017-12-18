@@ -187,6 +187,7 @@ app.get('/webhook', (req, res) => {
 function handleMessage(sender_psid, received_message) {
     let response;
 	var userGameList;
+
     // Checks if the message contains text
 	getUserTeams(function(result) {
 		console.log("User Teams: " + result)
