@@ -62,7 +62,7 @@ function getUserTeams(callback){
 }
 
 //Gets the scoreboard for games happening on the date specified in for YYYYMMDD
-function getGameScores(date, teams, callback){
+function getGameScores(date, teams, showAllGames, callback){
 	fetch(`http://data.nba.net/data/10s/prod/v1/${date}/scoreboard.json`)
 	.then(response => {
 		response.json().then(json => {
@@ -71,16 +71,30 @@ function getGameScores(date, teams, callback){
 			for(var i = 0; i < json.games.length; i++){
 				var hTeamCode = json.games[i].hTeam.triCode
 				var aTeamCode = json.games[i].vTeam.triCode
-				var homeTeamScore = parseInt(json.games[i].hTeam.score)
-				var awayTeamScore = parseInt(json.games[i].vTeam.score)
+				var homeTeamScore = ((json.games[i].hTeam.score.length == 0) ? 0 : parseInt(json.games[i].hTeam.score))
+				var awayTeamScore = ((json.games[i].vTeam.score.length == 0) ? 0 : parseInt(json.games[i].vTeam.score))
+				var isEndGame =  json.games[i].endTimeUTC
 				
-				if(teams.indexOf(hTeamCode) >= 0 || teams.indexOf(aTeamCode) >= 0){
+				if((teams.indexOf(hTeamCode) >= 0 || teams.indexOf(aTeamCode) >= 0) || (showAllGames == true)){
+					var scoreLine;
 					if(homeTeamScore > awayTeamScore){
-						gameScores.push(hTeamCode+ ": " + homeTeamScore + "  " +  aTeamCode + ": " + awayTeamScore)
+						scoreLine = hTeamCode+ ": " + homeTeamScore + "  " +  aTeamCode + ": " + awayTeamScore
 					} else {
-						gameScores.push(aTeamCode + ": " + awayTeamScore + "  " + hTeamCode + ": " + homeTeamScore)
+						scoreLine = aTeamCode + ": " + awayTeamScore + "  " + hTeamCode + ": " + homeTeamScore
 					}
+					
+					if(isEndGame !== undefined){
+						scoreLine += "  FINAL"
+					} else {
+						if(json.games[i].period.current != 0 && json.games[i].clock.length != 0) {
+							scoreLine += "  Q" + json.games[i].period.current + " " + json.games[i].clock
+						} else if(json.games[i].period.isEndOfPeriod == true) {
+							scoreLine += "  Q" + json.games[i].period.current + " END"
+						}
+					}
+					gameScores.push(scoreLine)
 				}
+				//console.log(json.games[i])
 			}
 			//console.log(gameScores)
 			callback(gameScores)
@@ -90,16 +104,85 @@ function getGameScores(date, teams, callback){
 	 });
 }
 
+function getPlayers(year, callback){
+	fetch(`http://data.nba.net/data/10s/prod/v1/${year}/players.json`)
+	.then(response => {
+		response.json().then(json => {
+			var playersName = []
+			var playersId = []
+			for(var i = 0; i <json.league.standard.length; i++){
+				var player = (json.league.standard[i].firstName + " " + json.league.standard[i].lastName)
+				
+				if( player.toLowerCase() == 'James Harden'.toLowerCase() ||  player.toLowerCase() == 'Demar Derozan'.toLowerCase() ){
+					var playersChosen = json.league.standard[i]
+					//console.log(player)
+					playersName.push(player)
+					playersId.push(playersChosen.personId)
+				}
+			}
+			callback(playersName, playersId)
+		});
+	 }) .catch(error => {
+		console.log(error);
+	 });
+}
+
+function getPlayerStats(playerId, playerName, callback) {	
+	fetch(`http://data.nba.net/data/10s/prod/v1/2017/players/${playerId}_profile.json`)
+	.then(response => {
+		response.json().then(json => {
+			var minPerGame = json.league.standard.stats.latest.mpg
+			var pointsPerGame = json.league.standard.stats.latest.ppg
+			var reboundsPerGame = json.league.standard.stats.latest.rpg
+			var assistsPerGame = json.league.standard.stats.latest.apg
+			
+
+			var basicStatLine = playerName + " -> MPG: " + minPerGame + " PPG: " + pointsPerGame + " APG: " + assistsPerGame + " RPG: " + reboundsPerGame  + " \n"
+			callback(basicStatLine)
+		});
+	}) .catch(error => {
+		console.log(error);
+	});
+}
+
+function getSelectedPlayersStats(callback) {
+	getPlayers("2017", function(playerNames, playerIds){
+		for(var i = 0; i < playerNames.length; i++){
+			var statList = []
+			getPlayerStats(playerIds[i], playerNames[i], function(stat) {
+				statList.push(stat)
+				if(playerNames.length == statList.length) {
+					callback(statList)
+				}
+			});
+		}
+	});
+}
+
 app.use(express.static(path.join(__dirname, 'Regna')));
 
 // Sets server port and logs message on success
 app.listen(process.env.PORT || 9000, () => console.log('webhook is listening'));
+app.get('/nbaPlayers', function(req, res) {
+	getSelectedPlayersStats(function(stats){
+		var statList = ''
+		for(var i = 0; i < stats.length; i++){
+			statList += stats[i]
+		}
+		console.log(statList)
+	});
+});
 
 app.get('/nba', function(req, res) {
 	var userGameList;
 	getUserTeams(function(result) {
 		console.log("User Teams: " + result)
-		getGameScores("20171215", result, function(games){
+		var showAllGames = true;
+	
+		var datetime = new Date();
+		var date = datetime.getFullYear()+'' + (datetime.getMonth()+1) + '' + datetime.getDate()
+				
+		getGameScores(date, result, showAllGames, function(games){
 			userGameList = games
 			var gameListFormat
 			for(var i = 0; i < userGameList.length; i++){
@@ -187,31 +270,48 @@ app.get('/webhook', (req, res) => {
 function handleMessage(sender_psid, received_message) {
     let response;
 	var userGameList;
-
-    // Checks if the message contains text
-	getUserTeams(function(result) {
-		console.log("User Teams: " + result)
-		getGameScores("20171217", result, function(games){
-			userGameList = games
-			var gameListFormat
-			for(var i = 0; i < userGameList.length; i++){
-				if(i == 0){
-					gameListFormat = "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
-				} else {
-					gameListFormat += "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
+	var message = received_message.text;
+	
+	if(message) {
+		if(message.toLowerCase().includes('stats')) {
+			getSelectedPlayersStats(function(stats){
+				var statList = ''
+				for(var i = 0; i < stats.length; i++){
+					statList += stats[i]
 				}
-			}
-			if (received_message.text) {
-				// Create the payload for a basic text message, which
-				// will be added to the body of our request to the Send API
 				response = {
-					//"text": "You sent the message: " + received_message.text + ". Now send me an attachment!"
-					"text": gameListFormat
+					"text": statList
 				}
+			});
+		} else if(message.toLowerCase().includes('games')) {
+			getUserTeams(function(result) {
+				console.log("User Teams: " + result)
+				var showAllGames = true;
+			
+				var datetime = new Date();
+				var date = datetime.getFullYear()+'' + (datetime.getMonth()+1) + '' + datetime.getDate()
+						
+				getGameScores(date, result, showAllGames, function(games){
+					userGameList = games
+					var gameListFormat
+					for(var i = 0; i < userGameList.length; i++){
+						if(i == 0){
+							gameListFormat = "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
+						} else {
+							gameListFormat += "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
+						}
+					}
+					response = {
+						"text": gameListFormat
+					}
+				});
+			});
+		} else {
+			response = {
+				"text": "You sent the message: " + received_message.text + ". Now send me an attachment!"
 			}
-			callSendAPI(sender_psid, response);
-		});
-	});
+		}
+	}
 }
 
 // Handles messaging_postbacks events
