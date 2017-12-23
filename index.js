@@ -282,6 +282,7 @@ function handleMessage(sender_psid, received_message) {
 				response = {
 					"text": statList
 				}
+				callSendAPI(sender_psid, response) 
 			});
 		} else if(message.toLowerCase().includes('games')) {
 			getUserTeams(function(result) {
@@ -304,14 +305,15 @@ function handleMessage(sender_psid, received_message) {
 					response = {
 						"text": gameListFormat
 					}
+					callSendAPI(sender_psid, response) 
 				});
 			});
 		} else {
 			response = {
 				"text": "You sent the message: " + received_message.text + ". Now send me an attachment!"
 			}
+			callSendAPI(sender_psid, response) 
 		}
-		callSendAPI(sender_psid, response) 
 	}
 }
 
