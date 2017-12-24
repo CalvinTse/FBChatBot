@@ -137,7 +137,7 @@ function getPlayerStats(playerId, playerName, callback) {
 			var assistsPerGame = json.league.standard.stats.latest.apg
 			
 
-			var basicStatLine = playerName + " -> MPG: " + minPerGame + " PPG: " + pointsPerGame + " APG: " + assistsPerGame + " RPG: " + reboundsPerGame  + " \n"
+			var basicStatLine = playerName + " \n MPG: " + minPerGame + " PPG: " + pointsPerGame + " APG: " + assistsPerGame + " RPG: " + reboundsPerGame  + " \n"
 			callback(basicStatLine)
 		});
 	}) .catch(error => {
@@ -287,8 +287,7 @@ function handleMessage(sender_psid, received_message) {
 		} else if(message.toLowerCase().includes('games')) {
 			getUserTeams(function(result) {
 				console.log("User Teams: " + result)
-				var showAllGames = true;
-			
+				var showAllGames = (message.toLowerCase().includes('all')) ? true : false;
 				var datetime = new Date();
 				var date = datetime.getFullYear()+'' + (datetime.getMonth()+1) + '' + datetime.getDate()
 						
@@ -305,6 +304,7 @@ function handleMessage(sender_psid, received_message) {
 					response = {
 						"text": gameListFormat
 					}
+					console.log("Response text:" + gameListFormat)
 					callSendAPI(sender_psid, response) 
 				});
 			});
