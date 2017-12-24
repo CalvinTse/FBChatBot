@@ -292,6 +292,7 @@ function handleMessage(sender_psid, received_message) {
 						
 				getGameScores(date, result, showAllGames, function(games){
 					//userGameList = games
+					console.log(games)
 					var gameListFormat
 					for(var i = 0; i < games.length; i++){
 						if(i == 0){
