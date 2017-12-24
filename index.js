@@ -82,7 +82,7 @@ function getGameScores(date, teams, showAllGames, callback){
 					} else {
 						scoreLine = aTeamCode + ": " + awayTeamScore + "  " + hTeamCode + ": " + homeTeamScore
 					}
-					
+					console.log(scoreLine)
 					if(isEndGame !== undefined){
 						scoreLine += "  FINAL"
 					} else {
