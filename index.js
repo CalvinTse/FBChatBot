@@ -8,6 +8,8 @@ var path = require("path")
 var mysql = require('mysql')
 var request = require("request")
 var fetch = require('node-fetch')
+var moment = require('moment')
+var timeZone = require('moment-timezone')
 
 var con = mysql.createConnection({
     host: "chatdbinstance.cdye1p7zziwn.us-east-2.rds.amazonaws.com",
@@ -74,7 +76,6 @@ function getGameScores(date, teams, showAllGames, callback){
 				var homeTeamScore = ((json.games[i].hTeam.score.length == 0) ? 0 : parseInt(json.games[i].hTeam.score))
 				var awayTeamScore = ((json.games[i].vTeam.score.length == 0) ? 0 : parseInt(json.games[i].vTeam.score))
 				var isEndGame =  json.games[i].endTimeUTC
-				console.log("HOME TEAM: " + hTeamCode)
 				
 				if((teams.indexOf(hTeamCode) >= 0 || teams.indexOf(aTeamCode) >= 0) || (showAllGames == true)){
 					var scoreLine;
@@ -83,7 +84,6 @@ function getGameScores(date, teams, showAllGames, callback){
 					} else {
 						scoreLine = aTeamCode + ": " + awayTeamScore + "  " + hTeamCode + ": " + homeTeamScore
 					}
-					console.log("Score Lines " + scoreLine)
 					if(isEndGame !== undefined){
 						scoreLine += "  FINAL"
 					} else {
@@ -180,8 +180,9 @@ app.get('/nba', function(req, res) {
 		console.log("User Teams: " + result)
 		var showAllGames =  true ;
 		var datetime = new Date();
-		var date = datetime.getFullYear()+'' + (datetime.getMonth()+1) + '' + datetime.getDate()
-		console.log("Date: "+ date)
+
+		var date = datetime.getFullYear()+ '' + (datetime.getMonth()+1) + '' + datetime.getDate()
+		//console.log("Date: "+ datetime)
 		getGameScores(date, result, showAllGames, function(games){
 			userGameList = games
 			var gameListFormat
@@ -288,10 +289,9 @@ function handleMessage(sender_psid, received_message) {
 			getUserTeams(function(result) {
 				console.log("User Teams: " + result)
 				var showAllGames = (message.toLowerCase().includes('all')) ? true : false;
-				var datetime = new Date();
-				console.log(datetime)
-				var date = datetime.getFullYear()+'' + (datetime.getMonth()+1) + '' + datetime.getDate()
-				console.log("Date: " + date)		
+				var datetime = moment();	
+				var date =  datetime.tz('America/New_York').format('YYYYMMDD')
+				console.log("Moment Date: "+ datetime.tz('America/New_York').format('YYYYMMDD'))
 				console.log("showAllGames " + showAllGames)
 				getGameScores(date, result, showAllGames, function(games){
 					//userGameList = games
