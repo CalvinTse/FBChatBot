@@ -177,8 +177,7 @@ app.get('/nba', function(req, res) {
 	var userGameList;
 	getUserTeams(function(result) {
 		console.log("User Teams: " + result)
-		var showAllGames = true;
-	
+		var showAllGames =  true ;
 		var datetime = new Date();
 		var date = datetime.getFullYear()+'' + (datetime.getMonth()+1) + '' + datetime.getDate()
 				
@@ -192,7 +191,7 @@ app.get('/nba', function(req, res) {
 					gameListFormat += "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
 				}
 			}
-			console.log(gameListFormat)
+			console.log("Response text:" + gameListFormat)
 		});
 	});
 });
@@ -292,19 +291,20 @@ function handleMessage(sender_psid, received_message) {
 				var date = datetime.getFullYear()+'' + (datetime.getMonth()+1) + '' + datetime.getDate()
 						
 				getGameScores(date, result, showAllGames, function(games){
-					userGameList = games
+					//userGameList = games
 					var gameListFormat
-					for(var i = 0; i < userGameList.length; i++){
+					for(var i = 0; i < games.length; i++){
 						if(i == 0){
-							gameListFormat = "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
+							gameListFormat = "Game  #" + (i + 1) + ": " + games[i]  + " \n"
 						} else {
-							gameListFormat += "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
+							gameListFormat += "Game  #" + (i + 1) + ": " + games[i]  + " \n"
 						}
+						console.log("Response text:" + gameListFormat)
 					}
 					response = {
 						"text": gameListFormat
 					}
-					console.log("Response text:" + gameListFormat)
+					console.log("Final Response text:" + gameListFormat)
 					callSendAPI(sender_psid, response) 
 				});
 			});
