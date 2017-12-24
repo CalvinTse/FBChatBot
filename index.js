@@ -181,7 +181,7 @@ app.get('/nba', function(req, res) {
 		var showAllGames =  true ;
 		var datetime = new Date();
 		var date = datetime.getFullYear()+'' + (datetime.getMonth()+1) + '' + datetime.getDate()
-				
+		console.log("Date: "+ date)
 		getGameScores(date, result, showAllGames, function(games){
 			userGameList = games
 			var gameListFormat
@@ -289,6 +289,7 @@ function handleMessage(sender_psid, received_message) {
 				console.log("User Teams: " + result)
 				var showAllGames = (message.toLowerCase().includes('all')) ? true : false;
 				var datetime = new Date();
+				console.log(datetime)
 				var date = datetime.getFullYear()+'' + (datetime.getMonth()+1) + '' + datetime.getDate()
 				console.log("Date: " + date)		
 				console.log("showAllGames " + showAllGames)
