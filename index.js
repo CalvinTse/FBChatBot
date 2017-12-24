@@ -74,6 +74,7 @@ function getGameScores(date, teams, showAllGames, callback){
 				var homeTeamScore = ((json.games[i].hTeam.score.length == 0) ? 0 : parseInt(json.games[i].hTeam.score))
 				var awayTeamScore = ((json.games[i].vTeam.score.length == 0) ? 0 : parseInt(json.games[i].vTeam.score))
 				var isEndGame =  json.games[i].endTimeUTC
+				console.log("HOME TEAM: " + hTeamCode)
 				
 				if((teams.indexOf(hTeamCode) >= 0 || teams.indexOf(aTeamCode) >= 0) || (showAllGames == true)){
 					var scoreLine;
@@ -82,7 +83,7 @@ function getGameScores(date, teams, showAllGames, callback){
 					} else {
 						scoreLine = aTeamCode + ": " + awayTeamScore + "  " + hTeamCode + ": " + homeTeamScore
 					}
-					console.log(scoreLine)
+					console.log("Score Lines " + scoreLine)
 					if(isEndGame !== undefined){
 						scoreLine += "  FINAL"
 					} else {
@@ -289,10 +290,11 @@ function handleMessage(sender_psid, received_message) {
 				var showAllGames = (message.toLowerCase().includes('all')) ? true : false;
 				var datetime = new Date();
 				var date = datetime.getFullYear()+'' + (datetime.getMonth()+1) + '' + datetime.getDate()
-						
+				console.log("Date: " + date)		
+				console.log("showAllGames " + showAllGames)
 				getGameScores(date, result, showAllGames, function(games){
 					//userGameList = games
-					console.log(games)
+					console.log("Return games: "+ games)
 					var gameListFormat
 					for(var i = 0; i < games.length; i++){
 						if(i == 0){
