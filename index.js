@@ -47,9 +47,9 @@ function getUserTeams(senderId, callback){
 	var sqlQuery = `SELECT * FROM USER_SUBS where name = \'${senderId}\'`
 	//console.log("SQL: " + sqlQuery)
 	con.query(sqlQuery, function(err, results, fields) {
+		var userTeams = []
 		if (err) throw err;
 		if (results.length > 0) {
-			var userTeams = []
 			
 			for (var i = 0; i < results.length; i++){
 				userTeams.push(results[i].playerID)
@@ -57,14 +57,14 @@ function getUserTeams(senderId, callback){
 			//console.log("Returned Rows: " + userTeams);
 			//getGameScores(date, userTeams, gameList)
 			//console.log(gameList)
-			callback(userTeams)
 		} else {
 			console.log("NO ROWS RETRIEVED");
 		}
+		callback(userTeams)
 	});
 }
 
-function addUserTeams(senderId, userTeamsList){
+function addUserTeams(senderId, userTeamsList, callback){
 	getNbaTeams('2017', function(nbaTeams){
 		getUserTeams(senderId, function(userTeams) {
 			var teamsToAdd= []
@@ -85,6 +85,7 @@ function addUserTeams(senderId, userTeamsList){
 			} else {
 				console.log("NO new teams added")
 			}
+			callback(teamsToAdd)
 		});
 	});
 }
@@ -253,8 +254,14 @@ app.get('/nba', function(req, res) {
 });
 
 app.get('/nbaTeams', function(req, res) {
-	var teamsToAdd = ["CLE", "TOR", "ATL"]
-	addUserTeams("TEST", teamsToAdd);
+	var teamsToAdd = ["CHI"]
+	addUserTeams("TEST1", teamsToAdd, function(teamsAdded) {
+		if(teamsAdded.length > 0) {
+			console.log("Added: " + teamsAdded)
+		} else {
+			console.log("No teams Added")
+		}
+	});
 });
 
 app.get('/', function(req, res) {
@@ -285,7 +292,9 @@ app.post('/webhook', (req, res) => {
 
             if (webhookEvent.message) {
                 handleMessage(sender_psid, webhookEvent.message);
-            }
+            } else if (webhookEvent.postback) {
+				handlePostback(sender_psid, webhookEvent.postback);
+			  }
         });
 
         // Returns a '200 OK' response to all requests
@@ -340,16 +349,24 @@ function handleMessage(sender_psid, received_message) {
 			for(var i = 0; i < playersFromTextList.length; i++){
 				playersList.push(playersFromTextList[i].substring(1))
 			}
-			getSelectedPlayersStats(playersList, function(stats){
-				var statList = ''
-				for(var i = 0; i < stats.length; i++){
-					statList += stats[i]
-				}
-				response = {
-					"text": statList
-				}
-				callSendAPI(sender_psid, response) 
-			});
+			if(playersList.length > 0) {
+					getSelectedPlayersStats(playersList, function(stats){
+					var statList = ''
+					for(var i = 0; i < stats.length; i++){
+						statList += stats[i]
+					}
+					response = {
+						"text": statList
+					}
+					callSendAPI(sender_psid, response) 
+				});
+			} else {
+					response = {
+						"text": "I dont understand, you did not specify any players. \nPlease reference players in the format: \n@FirstNameLastName"
+					}
+					callSendAPI(sender_psid, response) 
+			}
+
 		} else if(message.toLowerCase().includes('games')) {
 			getUserTeams(function(result) {
 				console.log("User Teams: " + result)
@@ -368,17 +385,49 @@ function handleMessage(sender_psid, received_message) {
 						} else {
 							gameListFormat += "Game  #" + (i + 1) + ": " + games[i]  + " \n"
 						}
-						console.log("Response text:" + gameListFormat)
+						//console.log("Response text:" + gameListFormat)
 					}
-					response = {
-						"text": gameListFormat
+					if(gameListFormat === undefined) {
+						response = {
+							"text": "No games to display"
+						}
+					} else {
+						response = {
+							"text": "Games Chosen: \n" + gameListFormat
+						}
 					}
 					console.log("Final Response text:" + gameListFormat)
 					callSendAPI(sender_psid, response) 
 				});
 			});
 		} else if (message.toLowerCase().includes('subscribe')){
-			
+			var teamCodeFromTextList = message.toLowerCase().match(/@\w+/g)
+			var teamList = []
+			console.log(teamCodeFromTextList)
+			for(var i = 0; i < teamCodeFromTextList.length; i++){
+				teamList.push(teamCodeFromTextList[i].substring(1))
+			} 
+			if(teamList.length > 0){
+					addUserTeams("TEST1", teamList, function(teamsAdded) {
+					if(teamsAdded.length > 0) {
+						console.log("Added: " + teamsAdded)
+						response = {
+							"text": "Added: " + teamsAdded + " to your teams"
+						} 
+					} else {
+						response = {
+							"text": "No teams added from " + teamList
+						} 
+					}
+					callSendAPI(sender_psid, response) 
+				});
+			} else {
+				response = {
+					"text": "No teams retrieved from message please put in format: @TeamCode(triCode)"
+				} 
+				callSendAPI(sender_psid, response) 
+			}
+
 		}else {
 			response = {
 				"text": "You sent the message: " + received_message.text + ". Now send me an attachment!"
@@ -390,7 +439,7 @@ function handleMessage(sender_psid, received_message) {
 
 // Handles messaging_postbacks events
 function handlePostback(sender_psid, received_postback) {
-
+	
 }
 
 // Sends response messages via the Send API
