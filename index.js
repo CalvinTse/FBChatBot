@@ -68,10 +68,12 @@ function addUserTeams(senderId, userTeamsList, callback){
 	getNbaTeams('2017', function(nbaTeams){
 		getUserTeams(senderId, function(userTeams) {
 			var teamsToAdd= []
+			var teamNameAdded = []
 			for(var i = 0 ; i < userTeamsList.length; i++){
 				if(nbaTeams.indexOf(userTeamsList[i]) >= 0){
 					if(userTeams.indexOf(userTeamsList[i]) < 0){
 					teamsToAdd.push([senderId, userTeamsList[i]])
+					teamNameAdded.push(userTeamsList[i])
 					} else {
 						console.log(userTeamsList[i] + " already exists")
 					}
@@ -85,7 +87,7 @@ function addUserTeams(senderId, userTeamsList, callback){
 			} else {
 				console.log("NO new teams added")
 			}
-			callback(teamsToAdd)
+			callback(teamNameAdded)
 		});
 	});
 }
@@ -408,7 +410,7 @@ function handleMessage(sender_psid, received_message) {
 				teamList.push(teamCodeFromTextList[i].substring(1))
 			} 
 			if(teamList.length > 0){
-					addUserTeams("TEST1", teamList, function(teamsAdded) {
+					addUserTeams(sender_psid, teamList, function(teamsAdded) {
 					if(teamsAdded.length > 0) {
 						console.log("Added: " + teamsAdded)
 						response = {
