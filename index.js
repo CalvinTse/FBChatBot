@@ -370,7 +370,7 @@ function handleMessage(sender_psid, received_message) {
 			}
 
 		} else if(message.toLowerCase().includes('games')) {
-			getUserTeams(function(result) {
+			getUserTeams(sender_psid, function(result) {
 				console.log("User Teams: " + result)
 				var showAllGames = (message.toLowerCase().includes('all')) ? true : false;
 				var datetime = moment();	
