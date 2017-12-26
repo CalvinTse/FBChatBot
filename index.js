@@ -34,18 +34,19 @@ function createTables(){
 	});
 }
 
-function setUserSubs(){
+function setUserSubs(addTeams){
 	var query = "INSERT INTO USER_SUBS (name, playerID) VALUES ?"
-	var values = [['TEST', 'TOR'], ['TEST', 'ATL']]
 	
-	con.query(query, [values], function(err, results, fields) {
+	con.query(query, [addTeams], function(err, results, fields) {
 		if (err) throw err;
 		console.log("INSERTED " + results.affectedRows + " ROWS")
 	});
 }
 
-function getUserTeams(callback){
-	con.query("SELECT * FROM USER_SUBS where name = \'TEST\'", function(err, results, fields) {
+function getUserTeams(senderId, callback){
+	var sqlQuery = `SELECT * FROM USER_SUBS where name = \'${senderId}\'`
+	//console.log("SQL: " + sqlQuery)
+	con.query(sqlQuery, function(err, results, fields) {
 		if (err) throw err;
 		if (results.length > 0) {
 			var userTeams = []
@@ -61,6 +62,49 @@ function getUserTeams(callback){
 			console.log("NO ROWS RETRIEVED");
 		}
 	});
+}
+
+function addUserTeams(senderId, userTeamsList){
+	getNbaTeams('2017', function(nbaTeams){
+		getUserTeams(senderId, function(userTeams) {
+			var teamsToAdd= []
+			for(var i = 0 ; i < userTeamsList.length; i++){
+				if(nbaTeams.indexOf(userTeamsList[i]) >= 0){
+					if(userTeams.indexOf(userTeamsList[i]) < 0){
+					teamsToAdd.push([senderId, userTeamsList[i]])
+					} else {
+						console.log(userTeamsList[i] + " already exists")
+					}
+				} else {
+					console.log("Error: Teams Does not exist in the NBA")
+				}
+			}
+
+			if(teamsToAdd.length > 0) {
+				setUserSubs(teamsToAdd) 
+			} else {
+				console.log("NO new teams added")
+			}
+		});
+	});
+}
+
+function getNbaTeams(year, callback){
+	fetch(`http://data.nba.net/data/10s/prod/v1/${year}/teams.json`)
+	.then(response => {
+		response.json().then(json => {
+			var teamCodes = []
+			for(var i = 0; i <json.league.standard.length; i++){
+				if(json.league.standard[i].isNBAFranchise == true){
+					var team = json.league.standard[i]
+					teamCodes.push(team.tricode)
+				}
+			}
+			callback(teamCodes)
+		});
+	 }) .catch(error => {
+		console.log(error);
+	 });
 }
 
 //Gets the scoreboard for games happening on the date specified in for YYYYMMDD
@@ -95,9 +139,7 @@ function getGameScores(date, teams, showAllGames, callback){
 					}
 					gameScores.push(scoreLine)
 				}
-				//console.log(json.games[i])
 			}
-			//console.log(gameScores)
 			callback(gameScores)
 		});
 	 }) .catch(error => {
@@ -105,7 +147,7 @@ function getGameScores(date, teams, showAllGames, callback){
 	 });
 }
 
-function getPlayers(year, callback){
+function getPlayers(year, playersList, callback){
 	fetch(`http://data.nba.net/data/10s/prod/v1/${year}/players.json`)
 	.then(response => {
 		response.json().then(json => {
@@ -113,8 +155,7 @@ function getPlayers(year, callback){
 			var playersId = []
 			for(var i = 0; i <json.league.standard.length; i++){
 				var player = (json.league.standard[i].firstName + " " + json.league.standard[i].lastName)
-				
-				if( player.toLowerCase() == 'James Harden'.toLowerCase() ||  player.toLowerCase() == 'Demar Derozan'.toLowerCase() ){
+				if( playersList.indexOf(player.replace(" ", "").toLowerCase()) >= 0){
 					var playersChosen = json.league.standard[i]
 					//console.log(player)
 					playersName.push(player)
@@ -136,9 +177,8 @@ function getPlayerStats(playerId, playerName, callback) {
 			var pointsPerGame = json.league.standard.stats.latest.ppg
 			var reboundsPerGame = json.league.standard.stats.latest.rpg
 			var assistsPerGame = json.league.standard.stats.latest.apg
-			
-
-			var basicStatLine = playerName + " \n MPG: " + minPerGame + " PPG: " + pointsPerGame + " APG: " + assistsPerGame + " RPG: " + reboundsPerGame  + " \n"
+		
+			var basicStatLine = playerName + " \nMPG: " + minPerGame + " PPG: " + pointsPerGame + " APG: " + assistsPerGame + " RPG: " + reboundsPerGame  + " \n"
 			callback(basicStatLine)
 		});
 	}) .catch(error => {
@@ -146,8 +186,12 @@ function getPlayerStats(playerId, playerName, callback) {
 	});
 }
 
-function getSelectedPlayersStats(callback) {
-	getPlayers("2017", function(playerNames, playerIds){
+function getSelectedPlayersStats(playersList, callback) {
+	var playerListLowerCase = []
+	for(var i = 0;  i < playersList.length; i++){
+		playerListLowerCase.push(playersList[i].toLowerCase())
+	}
+	getPlayers("2017", playerListLowerCase, function(playerNames, playerIds){
 		for(var i = 0; i < playerNames.length; i++){
 			var statList = []
 			getPlayerStats(playerIds[i], playerNames[i], function(stat) {
@@ -162,10 +206,20 @@ function getSelectedPlayersStats(callback) {
 
 app.use(express.static(path.join(__dirname, 'Regna')));
 
-// Sets server port and logs message on success
+// Sets server port and loWgs message on success
 app.listen(process.env.PORT || 9000, () => console.log('webhook is listening'));
+
 app.get('/nbaPlayers', function(req, res) {
-	getSelectedPlayersStats(function(stats){
+	//var playersList = ["@jamesharden", "@kyleLowry"]
+	var txt = "Find stats for @jamesharden and @kyleLowry and @stephenCurry"
+	var playersFromTextList = txt.match(/@\w+/g)
+	var playersList = []
+	console.log(playersList)
+	for(var i = 0; i < playersFromTextList.length; i++){
+		playersList.push(playersFromTextList[i].substring(1))
+	}
+	console.log(playersList)
+	getSelectedPlayersStats(playersList, function(stats){
 		var statList = ''
 		for(var i = 0; i < stats.length; i++){
 			statList += stats[i]
@@ -178,7 +232,7 @@ app.get('/nba', function(req, res) {
 	var userGameList;
 	getUserTeams(function(result) {
 		console.log("User Teams: " + result)
-		var showAllGames =  true ;
+		var showAllGames =  false ;
 		var datetime = new Date();
 
 		var date = datetime.getFullYear()+ '' + (datetime.getMonth()+1) + '' + datetime.getDate()
@@ -196,6 +250,11 @@ app.get('/nba', function(req, res) {
 			console.log("Response text:" + gameListFormat)
 		});
 	});
+});
+
+app.get('/nbaTeams', function(req, res) {
+	var teamsToAdd = ["CLE", "TOR", "ATL"]
+	addUserTeams("TEST", teamsToAdd);
 });
 
 app.get('/', function(req, res) {
@@ -275,7 +334,13 @@ function handleMessage(sender_psid, received_message) {
 	
 	if(message) {
 		if(message.toLowerCase().includes('stats')) {
-			getSelectedPlayersStats(function(stats){
+			var playersFromTextList = message.toLowerCase().match(/@\w+/g)
+			var playersList = []
+			console.log(playersList)
+			for(var i = 0; i < playersFromTextList.length; i++){
+				playersList.push(playersFromTextList[i].substring(1))
+			}
+			getSelectedPlayersStats(playersList, function(stats){
 				var statList = ''
 				for(var i = 0; i < stats.length; i++){
 					statList += stats[i]
@@ -312,7 +377,9 @@ function handleMessage(sender_psid, received_message) {
 					callSendAPI(sender_psid, response) 
 				});
 			});
-		} else {
+		} else if (message.toLowerCase().includes('subscribe')){
+			
+		}else {
 			response = {
 				"text": "You sent the message: " + received_message.text + ". Now send me an attachment!"
 			}
