@@ -401,7 +401,7 @@ function handleMessage(sender_psid, received_message) {
 				});
 			});
 		} else if (message.toLowerCase().includes('subscribe')){
-			var teamCodeFromTextList = message.toLowerCase().match(/@\w+/g)
+			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
 			var teamList = []
 			console.log(teamCodeFromTextList)
 			for(var i = 0; i < teamCodeFromTextList.length; i++){
