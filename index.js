@@ -273,8 +273,8 @@ app.get('/nbaPlayers', function(req, res) {
 
 app.get('/nba', function(req, res) {
 	var userGameList;
-	getUserTeams("TEST1", function(result) {
-		console.log("User Teams: " + result)
+	getUserTeams("GG", function(result) {
+		console.log("User Teams: " + result.length)
 		var showAllGames =  false ;
 		var datetime = new Date();
 		
@@ -420,6 +420,20 @@ function handleMessage(sender_psid, received_message) {
 					callSendAPI(sender_psid, response) 
 			}
 
+		} else if(message.toLowerCase().includes('teams')) {
+			getUserTeams(sender_psid, function(userTeams) {
+				if(userTeams.length > 0) {
+					response = {
+						"text": "You are subscribed to " + userTeams
+					}
+				} else {
+					response = {
+						"text": "You arent subscribed to any teams right now.\nTo subscribe type in 'subscribe' and '@TeamTriCode'"
+					}
+				}
+				callSendAPI(sender_psid, response) 
+			});
+			
 		} else if(message.toLowerCase().includes('games')) {
 			getUserTeams(sender_psid, function(result) {
 				console.log("User Teams: " + result)
