@@ -457,9 +457,11 @@ function handleMessage(sender_psid, received_message) {
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
 			var teamList = []
 			console.log(teamCodeFromTextList)
-			for(var i = 0; i < teamCodeFromTextList.length; i++){
-				teamList.push(teamCodeFromTextList[i].substring(1))
-			} 
+			if(teamCodeFromTextList !== null) {
+				for(var i = 0; i < teamCodeFromTextList.length; i++){
+					teamList.push(teamCodeFromTextList[i].substring(1))
+				} 
+			}
 			if(teamList.length > 0){
 				deleteUserTeams(sender_psid, teamList, function(teamsDeleted) {
 					if(teamsDeleted.length > 0) {
@@ -485,9 +487,11 @@ function handleMessage(sender_psid, received_message) {
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
 			var teamList = []
 			console.log(teamCodeFromTextList)
-			for(var i = 0; i < teamCodeFromTextList.length; i++){
-				teamList.push(teamCodeFromTextList[i].substring(1))
-			} 
+			if(teamCodeFromTextList !== null) {
+				for(var i = 0; i < teamCodeFromTextList.length; i++){
+					teamList.push(teamCodeFromTextList[i].substring(1))
+				} 
+			}
 			if(teamList.length > 0){
 				addUserTeams(sender_psid, teamList, function(teamsAdded) {
 					if(teamsAdded.length > 0) {
