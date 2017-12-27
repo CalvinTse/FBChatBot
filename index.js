@@ -461,11 +461,11 @@ function handleMessage(sender_psid, received_message) {
 				teamList.push(teamCodeFromTextList[i].substring(1))
 			} 
 			if(teamList.length > 0){
-				deleteUserTeams(sender_psid, teamsToDelete, function(teamsDeleted) {
+				deleteUserTeams(sender_psid, teamList, function(teamsDeleted) {
 					if(teamsDeleted.length > 0) {
 						console.log("Deleted: " + teamsDeleted)
 						response = {
-							"text": "Deleted: " + teamsAdded + " from your teams"
+							"text": "Deleted: " + teamsDeleted + " from your teams"
 						} 
 					} else {
 						response = {
