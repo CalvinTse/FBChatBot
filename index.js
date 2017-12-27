@@ -453,7 +453,7 @@ function handleMessage(sender_psid, received_message) {
 					callSendAPI(sender_psid, response) 
 				});
 			});
-		}  else if (message.toLowerCase().includes('unsubscribe')) {
+		} else if (message.toLowerCase().includes('unsubscribe')) {
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
 			var teamList = []
 			console.log(teamCodeFromTextList)
@@ -473,7 +473,14 @@ function handleMessage(sender_psid, received_message) {
 						} 
 					}
 				});
-			} else if (message.toLowerCase().includes('subscribe')){
+			} else {
+				response = {
+					"text": "No teams were deleted from your subscribers List please put in format: @TeamCode(triCode)"
+				} 
+				callSendAPI(sender_psid, response) 
+			}
+
+		} else if (message.toLowerCase().includes('subscribe')){
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
 			var teamList = []
 			console.log(teamCodeFromTextList)
@@ -501,13 +508,6 @@ function handleMessage(sender_psid, received_message) {
 				callSendAPI(sender_psid, response) 
 			}
 		} else {
-				response = {
-					"text": "No teams were deleted from your subscribers List please put in format: @TeamCode(triCode)"
-				} 
-				callSendAPI(sender_psid, response) 
-			}
-
-		}else {
 			response = {
 				"text": "You sent the message: " + received_message.text + ". Now send me an attachment!"
 			}
