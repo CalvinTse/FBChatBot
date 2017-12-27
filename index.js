@@ -43,6 +43,15 @@ function setUserSubs(addTeams){
 	});
 }
 
+function deleteUserSubs(senderId, deleteTeam){
+	var query = `DELETE FROM USER_SUBS WHERE name = '${senderId}' AND playerID = '${deleteTeam}'`
+	
+	con.query(query, function(err, results, fields) {
+		if (err) throw err;
+		console.log(results.affectedRows + " ROWS Affected")
+	});
+}
+
 function getUserTeams(senderId, callback){
 	var sqlQuery = `SELECT * FROM USER_SUBS where name = \'${senderId}\'`
 	//console.log("SQL: " + sqlQuery)
@@ -61,6 +70,55 @@ function getUserTeams(senderId, callback){
 			console.log("NO ROWS RETRIEVED");
 		}
 		callback(userTeams)
+	});
+}
+
+function getNbaTeams(year, callback){
+	fetch(`http://data.nba.net/data/10s/prod/v1/${year}/teams.json`)
+	.then(response => {
+		response.json().then(json => {
+			var teamCodes = []
+			for(var i = 0; i <json.league.standard.length; i++){
+				if(json.league.standard[i].isNBAFranchise == true){
+					var team = json.league.standard[i]
+					teamCodes.push(team.tricode)
+				}
+			}
+			callback(teamCodes)
+		});
+	 }) .catch(error => {
+		console.log(error);
+	 });
+}
+
+function deleteUserTeams(senderId, userTeamsList, callback){
+	getNbaTeams('2017', function(nbaTeams){
+		getUserTeams(senderId, function(userTeams) {
+			//var teamsToDelete= []
+			var teamNameDeleted = []
+			for(var i = 0 ; i < userTeamsList.length; i++){
+				if(nbaTeams.indexOf(userTeamsList[i]) >= 0){
+					if(userTeams.indexOf(userTeamsList[i]) >= 0){
+						console.log("DELETE THIS TEAM: " + userTeamsList[i])
+						//teamsToDelete.push([senderId, userTeamsList[i]])
+						teamNameDeleted.push(userTeamsList[i])
+					} else {
+						console.log("Team is not subscribed")
+					}
+				} else {
+					console.log("Error: Teams Does not exist in the NBA")
+				}
+			}
+
+			if(teamNameDeleted.length > 0) {
+				for(var i = 0; i < teamNameDeleted.length; i++){
+					deleteUserSubs(senderId, teamNameDeleted[i]) 
+				}
+			} else {
+				console.log("NO new teams added")
+			}
+			callback(teamNameDeleted)
+		});
 	});
 }
 
@@ -90,24 +148,6 @@ function addUserTeams(senderId, userTeamsList, callback){
 			callback(teamNameAdded)
 		});
 	});
-}
-
-function getNbaTeams(year, callback){
-	fetch(`http://data.nba.net/data/10s/prod/v1/${year}/teams.json`)
-	.then(response => {
-		response.json().then(json => {
-			var teamCodes = []
-			for(var i = 0; i <json.league.standard.length; i++){
-				if(json.league.standard[i].isNBAFranchise == true){
-					var team = json.league.standard[i]
-					teamCodes.push(team.tricode)
-				}
-			}
-			callback(teamCodes)
-		});
-	 }) .catch(error => {
-		console.log(error);
-	 });
 }
 
 //Gets the scoreboard for games happening on the date specified in for YYYYMMDD
@@ -233,11 +273,11 @@ app.get('/nbaPlayers', function(req, res) {
 
 app.get('/nba', function(req, res) {
 	var userGameList;
-	getUserTeams(function(result) {
+	getUserTeams("TEST1", function(result) {
 		console.log("User Teams: " + result)
 		var showAllGames =  false ;
 		var datetime = new Date();
-
+		
 		var date = datetime.getFullYear()+ '' + (datetime.getMonth()+1) + '' + datetime.getDate()
 		//console.log("Date: "+ datetime)
 		getGameScores(date, result, showAllGames, function(games){
@@ -256,10 +296,21 @@ app.get('/nba', function(req, res) {
 });
 
 app.get('/nbaTeams', function(req, res) {
-	var teamsToAdd = ["CHI"]
-	addUserTeams("TEST1", teamsToAdd, function(teamsAdded) {
+	var teamsToAdd = ["CHI", "TOR"]
+	addUserTeams("TEST1",teamsToAdd, function(teamsAdded) {
 		if(teamsAdded.length > 0) {
 			console.log("Added: " + teamsAdded)
+		} else {
+			console.log("No teams Added")
+		}
+	});
+});
+
+app.get('/deleteNbaTeams', function(req, res) {
+	var teamsToDelete = ["TOR"]
+	deleteUserTeams("TEST1", teamsToDelete, function(teamsAdded) {
+		if(teamsAdded.length > 0) {
+			console.log("Deleted: " + teamsAdded)
 		} else {
 			console.log("No teams Added")
 		}
@@ -410,7 +461,7 @@ function handleMessage(sender_psid, received_message) {
 				teamList.push(teamCodeFromTextList[i].substring(1))
 			} 
 			if(teamList.length > 0){
-					addUserTeams(sender_psid, teamList, function(teamsAdded) {
+				addUserTeams(sender_psid, teamList, function(teamsAdded) {
 					if(teamsAdded.length > 0) {
 						console.log("Added: " + teamsAdded)
 						response = {
@@ -426,6 +477,33 @@ function handleMessage(sender_psid, received_message) {
 			} else {
 				response = {
 					"text": "No teams retrieved from message please put in format: @TeamCode(triCode)"
+				} 
+				callSendAPI(sender_psid, response) 
+			}
+
+		} else if (message.toLowerCase().includes('unsubscribe')) {
+			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
+			var teamList = []
+			console.log(teamCodeFromTextList)
+			for(var i = 0; i < teamCodeFromTextList.length; i++){
+				teamList.push(teamCodeFromTextList[i].substring(1))
+			} 
+			if(teamList.length > 0){
+				deleteUserTeams(sender_psid, teamsToDelete, function(teamsDeleted) {
+					if(teamsDeleted.length > 0) {
+						console.log("Deleted: " + teamsDeleted)
+						response = {
+							"text": "Deleted: " + teamsAdded + " from your teams"
+						} 
+					} else {
+						response = {
+							"text": "No teams deleted from " + teamList
+						} 
+					}
+				});
+			} else {
+				response = {
+					"text": "No teams were deleted from your subscribers List please put in format: @TeamCode(triCode)"
 				} 
 				callSendAPI(sender_psid, response) 
 			}
