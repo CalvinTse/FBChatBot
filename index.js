@@ -453,7 +453,27 @@ function handleMessage(sender_psid, received_message) {
 					callSendAPI(sender_psid, response) 
 				});
 			});
-		} else if (message.toLowerCase().includes('subscribe')){
+		}  else if (message.toLowerCase().includes('unsubscribe')) {
+			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
+			var teamList = []
+			console.log(teamCodeFromTextList)
+			for(var i = 0; i < teamCodeFromTextList.length; i++){
+				teamList.push(teamCodeFromTextList[i].substring(1))
+			} 
+			if(teamList.length > 0){
+				deleteUserTeams(sender_psid, teamsToDelete, function(teamsDeleted) {
+					if(teamsDeleted.length > 0) {
+						console.log("Deleted: " + teamsDeleted)
+						response = {
+							"text": "Deleted: " + teamsAdded + " from your teams"
+						} 
+					} else {
+						response = {
+							"text": "No teams deleted from " + teamList
+						} 
+					}
+				});
+			} else if (message.toLowerCase().includes('subscribe')){
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
 			var teamList = []
 			console.log(teamCodeFromTextList)
@@ -480,28 +500,7 @@ function handleMessage(sender_psid, received_message) {
 				} 
 				callSendAPI(sender_psid, response) 
 			}
-
-		} else if (message.toLowerCase().includes('unsubscribe')) {
-			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
-			var teamList = []
-			console.log(teamCodeFromTextList)
-			for(var i = 0; i < teamCodeFromTextList.length; i++){
-				teamList.push(teamCodeFromTextList[i].substring(1))
-			} 
-			if(teamList.length > 0){
-				deleteUserTeams(sender_psid, teamsToDelete, function(teamsDeleted) {
-					if(teamsDeleted.length > 0) {
-						console.log("Deleted: " + teamsDeleted)
-						response = {
-							"text": "Deleted: " + teamsAdded + " from your teams"
-						} 
-					} else {
-						response = {
-							"text": "No teams deleted from " + teamList
-						} 
-					}
-				});
-			} else {
+		} else {
 				response = {
 					"text": "No teams were deleted from your subscribers List please put in format: @TeamCode(triCode)"
 				} 
