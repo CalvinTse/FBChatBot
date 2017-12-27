@@ -472,6 +472,7 @@ function handleMessage(sender_psid, received_message) {
 							"text": "No teams deleted from " + teamList
 						} 
 					}
+					callSendAPI(sender_psid, response) 
 				});
 			} else {
 				response = {
