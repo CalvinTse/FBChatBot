@@ -516,7 +516,7 @@ function handleMessage(sender_psid, received_message) {
 							gameListFormat = games[i]  + " \n"
 						} else {
 							//gameListFormat += "Game  #" + (i + 1) + ": " + games[i]  + " \n"
-							gameListFormat = games[i]  + " \n"
+							gameListFormat += games[i]  + " \n"
 						}
 						//console.log("Response text:" + gameListFormat)
 					}
@@ -577,7 +577,7 @@ function handleMessage(sender_psid, received_message) {
 					if(teamsAdded.length > 0) {
 						console.log("Added: " + teamsAdded)
 						response = {
-							"text": "You are noe subscribed to " + teamsAdded + " for your teams"
+							"text": "You are now subscribed to " + teamsAdded + " for your teams"
 						} 
 					} else {
 						response = {
@@ -594,7 +594,7 @@ function handleMessage(sender_psid, received_message) {
 			}
 		} else {
 			response = {
-				"text": "You sent the message: " + received_message.text + ". Now send me an attachment!"
+				"text": "You sent the message: " + received_message.text + ". I do not understand it :("
 			}
 			callSendAPI(sender_psid, response) 
 		}
