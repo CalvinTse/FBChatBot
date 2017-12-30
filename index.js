@@ -267,14 +267,18 @@ function getSelectedPlayersStats(playersList, callback) {
 		playerListLowerCase.push(playersList[i].toLowerCase())
 	}
 	getPlayers("2017", playerListLowerCase, function(playerNames, playerIds){
-		for(var i = 0; i < playerNames.length; i++){
-			var statList = []
-			getPlayerStats(playerIds[i], playerNames[i], function(stat) {
-				statList.push(stat)
-				if(playerNames.length == statList.length) {
-					callback(statList)
-				}
-			});
+		var statList = []
+		if(playerNames.length > 0){
+			for(var i = 0; i < playerNames.length; i++){
+				getPlayerStats(playerIds[i], playerNames[i], function(stat) {
+					statList.push(stat)
+					if(playerNames.length == statList.length) {
+						callback(statList)
+					}
+				});
+			}
+		} else {
+			callback(statList)
 		}
 	});
 }
@@ -286,7 +290,8 @@ app.listen(process.env.PORT || 9000, () => console.log('webhook is listening'));
 
 app.get('/nbaPlayers', function(req, res) {
 	//var playersList = ["@jamesharden", "@kyleLowry"]
-	var txt = "Find stats for @jamesharden and @kyleLowry and @stephenCurry"
+	//var txt = "Find stats for @jamesharden and @kyleLowry and @stephenCurry"
+	var txt = "Find stats for @lavarball"
 	var playersFromTextList = txt.match(/@\w+/g)
 	var playersList = []
 	console.log(playersList)
@@ -296,10 +301,14 @@ app.get('/nbaPlayers', function(req, res) {
 	console.log(playersList)
 	getSelectedPlayersStats(playersList, function(stats){
 		var statList = ''
-		for(var i = 0; i < stats.length; i++){
-			statList += stats[i]
+		if(stats.length > 0){
+			for(var i = 0; i < stats.length; i++){
+				statList += stats[i]
+			}
+			console.log(statList)
+		} else {
+			console.log("EMPTY")
 		}
-		console.log(statList)
 	});
 });
 
@@ -468,14 +477,21 @@ function handleMessage(sender_psid, received_message) {
 				}
 			}
 			if(playersList.length > 0) {
-					getSelectedPlayersStats(playersList, function(stats){
-					var statList = ''
-					for(var i = 0; i < stats.length; i++){
-						statList += stats[i]
+				getSelectedPlayersStats(playersList, function(stats){
+					if(stats.length > 0){
+						var statList = ''
+						for(var i = 0; i < stats.length; i++){
+							statList += stats[i]
+						}
+						response = {
+							"text": statList
+						}
+					} else {
+						response = {
+							"text": "I don't know this player's stats"
+						}
 					}
-					response = {
-						"text": statList
-					}
+					
 					callSendAPI(sender_psid, response) 
 				});
 			} else {
