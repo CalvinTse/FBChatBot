@@ -78,13 +78,19 @@ function getNbaTeams(year, callback){
 	.then(response => {
 		response.json().then(json => {
 			var teamCodes = []
+			var teamCityNames = new Map()
+			var teamNicknames = new Map()
+			var teamId = []
 			for(var i = 0; i <json.league.standard.length; i++){
 				if(json.league.standard[i].isNBAFranchise == true){
 					var team = json.league.standard[i]
 					teamCodes.push(team.tricode)
+					teamCityNames.set(team.city.toUpperCase(), team.tricode)
+					teamNicknames.set(team.nickname.toUpperCase(), team.tricode)
+					teamId.push(team.teamId)
 				}
 			}
-			callback(teamCodes)
+			callback(teamCodes, teamCityNames, teamNicknames)
 		});
 	 }) .catch(error => {
 		console.log(error);
@@ -92,18 +98,31 @@ function getNbaTeams(year, callback){
 }
 
 function deleteUserTeams(senderId, userTeamsList, callback){
-	getNbaTeams('2017', function(nbaTeams){
+	getNbaTeams('2017', function(nbaTeamsCodes, nbaCities, nbaNicknames){
 		getUserTeams(senderId, function(userTeams) {
 			//var teamsToDelete= []
 			var teamNameDeleted = []
 			for(var i = 0 ; i < userTeamsList.length; i++){
-				if(nbaTeams.indexOf(userTeamsList[i]) >= 0){
-					if(userTeams.indexOf(userTeamsList[i]) >= 0){
+				if(nbaTeamsCodes.indexOf(userTeamsList[i]) >= 0 || nbaCities.has(userTeamsList[i]) || nbaNicknames.has(userTeamsList[i])){
+					if(userTeams.indexOf(userTeamsList[i]) >= 0 && teamNameDeleted.indexOf(userTeamsList[i]) < 0 && nbaTeamsCodes.indexOf(userTeamsList[i]) >= 0){
 						console.log("DELETE THIS TEAM: " + userTeamsList[i])
 						//teamsToDelete.push([senderId, userTeamsList[i]])
 						teamNameDeleted.push(userTeamsList[i])
+					}  else if(nbaCities.has(userTeamsList[i]) || nbaNicknames.has(userTeamsList[i])){
+						var userTeamCode
+						if(nbaCities.has(userTeamsList[i])) {
+							userTeamCode = nbaCities.get(userTeamsList[i])
+						} else if(nbaNicknames.has(userTeamsList[i])) {
+							userTeamCode = nbaNicknames.get(userTeamsList[i])
+						}
+						if(userTeams.indexOf(userTeamCode) >= 0 && teamNameDeleted.indexOf(userTeamCode) < 0) {
+							console.log("DELETE THIS TEAM: " + userTeamCode)
+							teamNameDeleted.push(userTeamCode)
+						} else {
+							console.log(userTeamsList[i] + " does not exists")
+						}
 					} else {
-						console.log("Team is not subscribed")
+						console.log("Team " + userTeamsList[i] +" is not subscribed")
 					}
 				} else {
 					console.log("Error: Teams Does not exist in the NBA")
@@ -123,15 +142,28 @@ function deleteUserTeams(senderId, userTeamsList, callback){
 }
 
 function addUserTeams(senderId, userTeamsList, callback){
-	getNbaTeams('2017', function(nbaTeams){
+	getNbaTeams('2017', function(nbaTeamsCodes, nbaCities, nbaNicknames){
 		getUserTeams(senderId, function(userTeams) {
 			var teamsToAdd= []
 			var teamNameAdded = []
 			for(var i = 0 ; i < userTeamsList.length; i++){
-				if(nbaTeams.indexOf(userTeamsList[i]) >= 0){
-					if(userTeams.indexOf(userTeamsList[i]) < 0){
-					teamsToAdd.push([senderId, userTeamsList[i]])
-					teamNameAdded.push(userTeamsList[i])
+				if(nbaTeamsCodes.indexOf(userTeamsList[i]) >= 0 || nbaCities.has(userTeamsList[i]) || nbaNicknames.has(userTeamsList[i])){
+					if(userTeams.indexOf(userTeamsList[i]) < 0 && teamNameAdded.indexOf(userTeamsList[i]) < 0 && nbaTeamsCodes.indexOf(userTeamsList[i]) >= 0){
+						teamsToAdd.push([senderId, userTeamsList[i]])
+						teamNameAdded.push(userTeamsList[i])
+					} else if(nbaCities.has(userTeamsList[i]) || nbaNicknames.has(userTeamsList[i])){
+						var userTeamCode
+						if(nbaCities.has(userTeamsList[i])) {
+							userTeamCode = nbaCities.get(userTeamsList[i])
+						} else if(nbaNicknames.has(userTeamsList[i])) {
+							userTeamCode = nbaNicknames.get(userTeamsList[i])
+						}
+						if(userTeams.indexOf(userTeamCode) < 0 && teamNameAdded.indexOf(userTeamCode) < 0) {
+							teamsToAdd.push([senderId, userTeamCode])
+							teamNameAdded.push(userTeamCode)
+						} else {
+							console.log(userTeamsList[i] + " already exists")
+						}
 					} else {
 						console.log(userTeamsList[i] + " already exists")
 					}
@@ -200,7 +232,7 @@ function getPlayers(year, playersList, callback){
 				var player = (json.league.standard[i].firstName + " " + json.league.standard[i].lastName)
 				if( playersList.indexOf(player.replace(" ", "").toLowerCase()) >= 0){
 					var playersChosen = json.league.standard[i]
-					//console.log(player)
+					//console.log(playersChosen)
 					playersName.push(player)
 					playersId.push(playersChosen.personId)
 				}
@@ -221,7 +253,7 @@ function getPlayerStats(playerId, playerName, callback) {
 			var reboundsPerGame = json.league.standard.stats.latest.rpg
 			var assistsPerGame = json.league.standard.stats.latest.apg
 		
-			var basicStatLine = playerName + " \nMPG: " + minPerGame + " PPG: " + pointsPerGame + " APG: " + assistsPerGame + " RPG: " + reboundsPerGame  + " \n"
+			var basicStatLine = playerName + ": \nMPG: " + minPerGame + " PPG: " + pointsPerGame + " APG: " + assistsPerGame + " RPG: " + reboundsPerGame  + " \n"
 			callback(basicStatLine)
 		});
 	}) .catch(error => {
@@ -273,8 +305,8 @@ app.get('/nbaPlayers', function(req, res) {
 
 app.get('/nba', function(req, res) {
 	var userGameList;
-	getUserTeams("GG", function(result) {
-		console.log("User Teams: " + result.length)
+	getUserTeams("TEST1", function(result) {
+		console.log("User Teams: " + result)
 		var showAllGames =  false ;
 		var datetime = new Date();
 		
@@ -296,7 +328,7 @@ app.get('/nba', function(req, res) {
 });
 
 app.get('/nbaTeams', function(req, res) {
-	var teamsToAdd = ["CHI", "TOR"]
+	var teamsToAdd = ["CHI", "TORONTO", "TOR", "BULLS"]
 	addUserTeams("TEST1",teamsToAdd, function(teamsAdded) {
 		if(teamsAdded.length > 0) {
 			console.log("Added: " + teamsAdded)
@@ -307,7 +339,7 @@ app.get('/nbaTeams', function(req, res) {
 });
 
 app.get('/deleteNbaTeams', function(req, res) {
-	var teamsToDelete = ["TOR"]
+var teamsToDelete = ["TORONTO", "TOR", "BULLS", "WARRIORS"]
 	deleteUserTeams("TEST1", teamsToDelete, function(teamsAdded) {
 		if(teamsAdded.length > 0) {
 			console.log("Deleted: " + teamsAdded)
@@ -390,17 +422,50 @@ app.get('/webhook', (req, res) => {
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
+	var SHOW_PLAYER_STATS = 1
+	var SHOW_USER_TEAMS = 2 
+	var SHOW_USER_GAMES = 3
+	var SHOW_ALL_GAMES = 4
+	var SUBSCRIBE_TEAMS = 5
+	var UNSUBSCRIBE_TEAMS = 6
+	var COMPARE_PLAYERS = 7
+	var NO_DECISION = 8
+	
     let response;
 	var userGameList;
 	var message = received_message.text;
+	var decision 
+	
+	if(message) {
+		var messageTokenLowerCase = message.toLowerCase().match(/\w+/g)
+		if(messageTokenLowerCase !== undefined) {
+			for(var i = 0; i < messageTokenLowerCase.length; i++) {
+				if(messageTokenLowerCase[i].includes('stats')) {
+					
+				} else if (messageTokenLowerCase[i].includes('teams')) {
+					
+				} else if (messageTokenLowerCase[i].includes('games')) {
+					
+				} else if (messageTokenLowerCase[i].includes('subscribe')) {
+					if (messageTokenLowerCase[i].includes('unsubscribe')) {
+						
+					} else {
+						
+					}
+				}
+			}
+		}		
+	}
 	
 	if(message) {
 		if(message.toLowerCase().includes('stats')) {
 			var playersFromTextList = message.toLowerCase().match(/@\w+/g)
 			var playersList = []
 			console.log(playersList)
-			for(var i = 0; i < playersFromTextList.length; i++){
-				playersList.push(playersFromTextList[i].substring(1))
+			if(playersFromTextList  !== null) {
+				for(var i = 0; i < playersFromTextList.length; i++){
+					playersList.push(playersFromTextList[i].substring(1))
+				}
 			}
 			if(playersList.length > 0) {
 					getSelectedPlayersStats(playersList, function(stats){
@@ -419,7 +484,6 @@ function handleMessage(sender_psid, received_message) {
 					}
 					callSendAPI(sender_psid, response) 
 			}
-
 		} else if(message.toLowerCase().includes('teams')) {
 			getUserTeams(sender_psid, function(userTeams) {
 				if(userTeams.length > 0) {
@@ -448,9 +512,11 @@ function handleMessage(sender_psid, received_message) {
 					var gameListFormat
 					for(var i = 0; i < games.length; i++){
 						if(i == 0){
-							gameListFormat = "Game  #" + (i + 1) + ": " + games[i]  + " \n"
+							//gameListFormat = "Game  #" + (i + 1) + ": " + games[i]  + " \n"
+							gameListFormat = games[i]  + " \n"
 						} else {
-							gameListFormat += "Game  #" + (i + 1) + ": " + games[i]  + " \n"
+							//gameListFormat += "Game  #" + (i + 1) + ": " + games[i]  + " \n"
+							gameListFormat = games[i]  + " \n"
 						}
 						//console.log("Response text:" + gameListFormat)
 					}
@@ -481,11 +547,11 @@ function handleMessage(sender_psid, received_message) {
 					if(teamsDeleted.length > 0) {
 						console.log("Deleted: " + teamsDeleted)
 						response = {
-							"text": "Deleted: " + teamsDeleted + " from your teams"
+							"text": teamsDeleted + " has been removed from your teams"
 						} 
 					} else {
 						response = {
-							"text": "No teams deleted from " + teamList
+							"text": "No teams deleted for  " + teamList
 						} 
 					}
 					callSendAPI(sender_psid, response) 
@@ -511,7 +577,7 @@ function handleMessage(sender_psid, received_message) {
 					if(teamsAdded.length > 0) {
 						console.log("Added: " + teamsAdded)
 						response = {
-							"text": "Added: " + teamsAdded + " to your teams"
+							"text": "You are noe subscribed to " + teamsAdded + " for your teams"
 						} 
 					} else {
 						response = {
