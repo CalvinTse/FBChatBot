@@ -85,8 +85,8 @@ function getNbaTeams(year, callback){
 				if(json.league.standard[i].isNBAFranchise == true){
 					var team = json.league.standard[i]
 					teamCodes.push(team.tricode)
-					teamCityNames.set(team.city.toUpperCase(), team.tricode)
-					teamNicknames.set(team.nickname.toUpperCase(), team.tricode)
+					teamCityNames.set(team.city.toUpperCase().replace(/\s+/g, ""), team.tricode)
+					teamNicknames.set(team.nickname.toUpperCase().replace(/\s+/g, ""), team.tricode)
 					teamId.push(team.teamId)
 				}
 			}
@@ -313,28 +313,6 @@ app.get('/nbaPlayers', function(req, res) {
 });
 
 app.get('/nba', function(req, res) {
-	var userGameList;
-	getUserTeams("TEST1", function(result) {
-		console.log("User Teams: " + result)
-		var showAllGames =  false ;
-		var datetime = moment();	
-		
-		var date = datetime.tz('America/New_York').format('YYYYMMDD')
-		
-		console.log("Date: "+ date)
-		getGameScores(date, result, showAllGames, function(games){
-			userGameList = games
-			var gameListFormat
-			for(var i = 0; i < userGameList.length; i++){
-				if(i == 0){
-					gameListFormat = "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
-				} else {
-					gameListFormat += "Game  #" + (i + 1) + ": " + userGameList[i]  + "\n"
-				}
-			}
-			console.log("Response text:" + gameListFormat)
-		});
-	});
 });
 
 app.get('/nbaTeams', function(req, res) {
@@ -461,7 +439,7 @@ function handleMessage(sender_psid, received_message) {
 					decisions[GREET_USER] += 1
 				} else if(messageTokenLowerCase[i].includes('stats')) {
 					decisions[SHOW_PLAYER_STATS] += 3
-				} else if (messageTokenLowerCase[i].includes('teams')) {
+				} else if (messageTokenLowerCase[i].includes('teams') || messageTokenLowerCase[i].includes('team')) {
 					decisions[UNSUBSCRIBE_TEAMS] += 0.5
 					decisions[SUBSCRIBE_TEAMS] += 0.5
 					decisions[SHOW_USER_GAMES] += 0.5
@@ -583,40 +561,102 @@ function handleMessage(sender_psid, received_message) {
 			
 		case SHOW_ALL_GAMES:
 		case SHOW_USER_GAMES:
-			getUserTeams(sender_psid, function(result) {
-				console.log("User Teams: " + result)
-				var showAllGames = (descisionMade == SHOW_ALL_GAMES) ? true : false;
-				var datetime = moment();	
-				var date =  datetime.tz('America/New_York').format('YYYYMMDD')
-				console.log("Moment Date: "+ datetime.tz('America/New_York').format('YYYYMMDD'))
-				console.log("showAllGames " + showAllGames)
-				getGameScores(date, result, showAllGames, function(games){
-					//userGameList = games
-					console.log("Return games: "+ games)
-					var gameListFormat
-					for(var i = 0; i < games.length; i++){
-						if(i == 0){
-							gameListFormat = "Game  #" + (i + 1) + ": " + games[i]  + " \n"
-							//gameListFormat = games[i]  + " \n"
+			var teamsFromTextList = message.toUpperCase().match(/@\w+/g)
+			var teamsList = []
+			console.log(teamsList)
+			if(teamsFromTextList  !== null) {
+				for(var i = 0; i < teamsFromTextList.length; i++){
+					teamsList.push(teamsFromTextList[i].substring(1))
+				}
+			}
+			
+			if(teamsList.length == 0) {
+				getUserTeams(sender_psid, function(result) {
+					console.log("User Teams: " + result)
+					var showAllGames = (descisionMade == SHOW_ALL_GAMES) ? true : false;
+					var datetime = moment();	
+					var date =  datetime.tz('America/New_York').format('YYYYMMDD')
+					console.log("Moment Date: "+ datetime.tz('America/New_York').format('YYYYMMDD'))
+					console.log("showAllGames " + showAllGames)
+					getGameScores(date, result, showAllGames, function(games){
+						//userGameList = games
+						console.log("Return games: "+ games)
+						var gameListFormat
+						for(var i = 0; i < games.length; i++){
+							if(i == 0){
+								gameListFormat = "Game  #" + (i + 1) + ": " + games[i]  + " \n"
+								//gameListFormat = games[i]  + " \n"
+							} else {
+								gameListFormat += "Game  #" + (i + 1) + ": " + games[i]  + " \n"
+								//gameListFormat += games[i]  + " \n"
+							}
+							//console.log("Response text:" + gameListFormat)
+						}
+						if(gameListFormat === undefined) {
+							response = {
+								"text": "No games to display"
+							}
 						} else {
-							gameListFormat += "Game  #" + (i + 1) + ": " + games[i]  + " \n"
-							//gameListFormat += games[i]  + " \n"
+							response = {
+								"text": "The games I found that are happening on "+ datetime.tz('America/New_York').format('MMMM Do YYYY') +" are: \n" + gameListFormat
+							}
 						}
-						//console.log("Response text:" + gameListFormat)
-					}
-					if(gameListFormat === undefined) {
-						response = {
-							"text": "No games to display"
-						}
-					} else {
-						response = {
-							"text": "The games I found that are happening on "+ datetime.tz('America/New_York').format('MMMM Do YYYY') +" are: \n" + gameListFormat
-						}
-					}
-					console.log("Final Response text:" + gameListFormat)
-					callSendAPI(sender_psid, response) 
+						console.log("Final Response text:" + gameListFormat)
+						callSendAPI(sender_psid, response) 
+					});
 				});
-			});
+			} else {
+				getNbaTeams('2017', function(nbaTeamsCodes, nbaCities, nbaNicknames){
+					var teamGamesToSearch = []
+					for(var i = 0; i < teamsList.length; i++) {
+						if(nbaTeamsCodes.indexOf(teamsList[i]) >= 0 || nbaCities.has(teamsList[i]) || nbaNicknames.has(teamsList[i])){
+							if(nbaTeamsCodes.indexOf(teamsList[i]) >= 0 && teamGamesToSearch.indexOf(teamsList[i]) < 0){
+								teamGamesToSearch.push(teamsList[i])
+							}else if(nbaCities.has(teamsList[i]) || nbaNicknames.has(teamsList[i])){
+								var userTeamCode
+								if(nbaCities.has(teamsList[i])) {
+									userTeamCode = nbaCities.get(teamsList[i])
+								} else if(nbaNicknames.has(teamsList[i])) {
+									userTeamCode = nbaNicknames.get(teamsList[i])
+								}
+								if(teamGamesToSearch.indexOf(userTeamCode) < 0) {
+									teamGamesToSearch.push(userTeamCode)
+								}
+							} 
+						}
+					}
+					
+					var datetime = moment();	
+					var date =  datetime.tz('America/New_York').format('YYYYMMDD')
+					console.log("Moment Date: "+ datetime.tz('America/New_York').format('YYYYMMDD'))
+					getGameScores(date, teamGamesToSearch, false, function(games){
+						//userGameList = games
+						console.log("Return games: "+ games)
+						var gameListFormat
+						for(var i = 0; i < games.length; i++){
+							if(i == 0){
+								gameListFormat = "Game  #" + (i + 1) + ": " + games[i]  + " \n"
+								//gameListFormat = games[i]  + " \n"
+							} else {
+								gameListFormat += "Game  #" + (i + 1) + ": " + games[i]  + " \n"
+								//gameListFormat += games[i]  + " \n"
+							}
+							//console.log("Response text:" + gameListFormat)
+						}
+						if(gameListFormat === undefined) {
+							response = {
+								"text": "No games to display"
+							}
+						} else {
+							response = {
+								"text": "The games I found that are happening on "+ datetime.tz('America/New_York').format('MMMM Do YYYY') +" are: \n" + gameListFormat
+							}
+						}
+						console.log("Final Response text:" + gameListFormat)
+						callSendAPI(sender_psid, response) 
+					});
+				});
+			}
 			break
 			
 		case UNSUBSCRIBE_TEAMS:
