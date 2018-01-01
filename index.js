@@ -451,7 +451,7 @@ function handleMessage(sender_psid, received_message) {
 		var messageTokenLowerCase = message.toLowerCase().match(/\w+/g)
 		if(messageTokenLowerCase !== undefined) {
 			for(var i = 0; i < messageTokenLowerCase.length; i++) {
-				if(messageTokenLowerCase[i].includes('hello')) {
+				if(messageTokenLowerCase[i].includes('hello') || messageTokenLowerCase[i].includes('hey')) {
 					decisions[GREET_USER] += 1
 				} else if(messageTokenLowerCase[i].includes('stats')) {
 					decisions[SHOW_PLAYER_STATS] += 3
@@ -487,7 +487,7 @@ function handleMessage(sender_psid, received_message) {
 			}
 		}
 	}
-	
+	console.log("DESCISION: " + descisionMade)
 	switch(descisionMade) {
 		case GREET_USER:
 			    response = {
@@ -520,7 +520,7 @@ function handleMessage(sender_psid, received_message) {
 					}
 				}
 				callSendAPI(sender_psid, response); 
-			break
+			//break
 			
 		case SHOW_PLAYER_STATS:
 			var playersFromTextList = message.toLowerCase().match(/@\w+/g)
@@ -555,7 +555,7 @@ function handleMessage(sender_psid, received_message) {
 					}
 					callSendAPI(sender_psid, response) 
 			}
-			break
+			//break
 		
 		case SHOW_USER_TEAMS:
 			getUserTeams(sender_psid, function(userTeams) {
@@ -570,7 +570,7 @@ function handleMessage(sender_psid, received_message) {
 				}
 				callSendAPI(sender_psid, response) 
 			});
-			break
+			//break
 			
 		case SHOW_ALL_GAMES:
 		case SHOW_USER_GAMES:
@@ -608,7 +608,7 @@ function handleMessage(sender_psid, received_message) {
 					callSendAPI(sender_psid, response) 
 				});
 			});
-			break
+			//break
 			
 		case UNSUBSCRIBE_TEAMS:
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
@@ -639,7 +639,7 @@ function handleMessage(sender_psid, received_message) {
 				} 
 				callSendAPI(sender_psid, response) 
 			}
-			break
+			//break
 			
 		case SUBSCRIBE_TEAMS:
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
@@ -670,14 +670,14 @@ function handleMessage(sender_psid, received_message) {
 				} 
 				callSendAPI(sender_psid, response) 
 			}
-			break
+			//break
 			
 		case NO_DECISION:
 			response = {
 				"text": "You sent the message: " + received_message.text + ". I do not understand it :("
 			}
 			callSendAPI(sender_psid, response) 
-			break
+			//break
 	}
 }
 
