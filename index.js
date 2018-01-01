@@ -377,21 +377,23 @@ app.post('/webhook', (req, res) => {
 
             // Gets the message. entry.messaging is an array, but 
             // will only ever contain one message, so we get index 0
-			console.log("webhookEvent " + entry.messaging);
-            let webhookEvent = entry.messaging[0];
-            console.log(webhookEvent);
+			//console.log("webhookEvent " + entry.messaging);
+			if(entry.messaging !== undefined) {
+				let webhookEvent = entry.messaging[0];
+				console.log(webhookEvent);
 
-            //Gets the sender PSID
-            let sender_psid = webhookEvent.sender.id;
-            console.log('Sender PSID: ' + sender_psid);
+				//Gets the sender PSID
+				let sender_psid = webhookEvent.sender.id;
+				console.log('Sender PSID: ' + sender_psid);
 
-			//Page id for postbacks
-            if (webhookEvent.message && sender_psid !== '164855247442750') {
-				//console.log('nlp: ' + webhookEvent.message.nlp.entities);
-                handleMessage(sender_psid, webhookEvent.message);
-            } else if (webhookEvent.postback) {
-				handlePostback(sender_psid, webhookEvent.postback);
-			  }
+					//Page id for postbacks
+				if (webhookEvent.message && sender_psid !== '164855247442750') {
+					//console.log('nlp: ' + webhookEvent.message.nlp.entities);
+					handleMessage(sender_psid, webhookEvent.message);
+				} else if (webhookEvent.postback) {
+					handlePostback(sender_psid, webhookEvent.postback);
+				}
+			}
         });
 
         // Returns a '200 OK' response to all requests
