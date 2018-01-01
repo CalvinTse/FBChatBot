@@ -284,7 +284,7 @@ function getSelectedPlayersStats(playersList, callback) {
 }
 
 function getUserGreeting(senderId, callback) {
-	fetch(`https://graph.facebook.com/v2.6/${senderId}?fields=first_name,last_name,profile_pic&access_token=EAACSGKoj1PkBALlvGcLdgvERHXkq1PdC3ZBAUZB5w08yiq36X6ywqlwoBupYwPTR6jLXeIZCMltUZA6za7zKbZBiFf6RJgXF0Izdc0yPZBKqZCWZB5am8kjdy7qHrl3Jv4EPIaWre50vIwL4pdixBnkUUIZBIEZCwYNjuMRU3QaVZAFlOHRNEdohI4C`)
+	fetch(`https://graph.facebook.com/v2.6/${senderId}?fields=first_name,last_name,profile_pic&access_token=EAACSGKoj1PkBALuryot7HFXqy9bGZCM6YTZC1pAIyRQX7vY1CtSnMtM49f97tvSCJiOuCQGk0q7sXQakVrl5LwvNZBCunu1AcG59yCNVIeGYkFbJPRjewKnXdRsWRbGNY4lkBPeWzvLCmoEWZAZCysZBtdG4R86BM6u4egfLIJZAklPE8xH9SZCA`)
 	.then(response => {
 		response.json().then(json => {
 			console.log(json)
