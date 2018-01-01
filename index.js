@@ -431,6 +431,7 @@ app.get('/webhook', (req, res) => {
 
 // Handles messages events
 function handleMessage(sender_psid, received_message) {
+	var GREET_USER = 0
 	var SHOW_PLAYER_STATS = 1
 	var SHOW_USER_TEAMS = 2 
 	var SHOW_USER_GAMES = 3
@@ -443,31 +444,84 @@ function handleMessage(sender_psid, received_message) {
     let response;
 	var userGameList;
 	var message = received_message.text;
-	var decision 
+	var decisions = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+	var descisionMade
 	
 	if(message) {
 		var messageTokenLowerCase = message.toLowerCase().match(/\w+/g)
 		if(messageTokenLowerCase !== undefined) {
 			for(var i = 0; i < messageTokenLowerCase.length; i++) {
-				if(messageTokenLowerCase[i].includes('stats')) {
-					
+				if(messageTokenLowerCase[i].includes('hello')) {
+					decisions[GREET_USER] += 1
+				} else if(messageTokenLowerCase[i].includes('stats')) {
+					decisions[SHOW_PLAYER_STATS] += 3
 				} else if (messageTokenLowerCase[i].includes('teams')) {
-					
-				} else if (messageTokenLowerCase[i].includes('games')) {
-					
+					decisions[UNSUBSCRIBE_TEAMS] += 1.5
+					decisions[SUBSCRIBE_TEAMS] += 1.5
+					decisions[SHOW_USER_GAMES] += 0.5
+					decisions[SHOW_ALL_GAMES] += 0.5
+					decisions[SHOW_USER_TEAMS] += 1.5
+				} else if (messageTokenLowerCase[i].includes('game') || messageTokenLowerCase[i].includes('score') ) {
+					decisions[SHOW_USER_GAMES] += 1.5
+					decisions[SHOW_ALL_GAMES] += 1.5
 				} else if (messageTokenLowerCase[i].includes('subscribe')) {
 					if (messageTokenLowerCase[i].includes('unsubscribe')) {
-						
+						decisions[UNSUBSCRIBE_TEAMS] += 3
 					} else {
-						
+						decisions[SUBSCRIBE_TEAMS] += 3
 					}
+				} else if (messageTokenLowerCase[i].includes('my')) {
+					decisions[SHOW_USER_TEAMS] += 1
+					decisions[SHOW_USER_GAMES] += 1
+				} else if(messageTokenLowerCase[i].includes('today')) {
+					decisions[SHOW_USER_GAMES] += 1
+					decisions[SHOW_ALL_GAMES] += 1
 				}
 			}
-		}		
+		}
+		
+		var maxValue = decisions[0]
+		for(var i = 0; i < decisions.length(); i++){
+			if(maxValue < decisions[i]) {
+				descisionMade = i
+			}
+		}
 	}
 	
-	if(message) {
-		if(message.toLowerCase().includes('stats')) {
+	switch(descisionMade) {
+		case GREET_USER:
+			    response = {
+					"attachment": {
+						"type": "template",
+						"payload": {
+							"template_type": "generic",
+							"elements": [{
+								"title": "Hello! My name is LeStats",
+								"subtitle": "I am here to give you updates on games and player stats from the NBA \nHere are some things that you can ask me :D",
+								"buttons": [
+									{
+										"type": "postback",
+										"title": "How to Subcribe to Teams",
+										"payload": "InstructSub",
+									},
+									{
+										"type": "postback",
+										"title": "How to Unsubcribe to Teams",
+										"payload": "InstructUnsub",
+									},
+									{
+										"type": "postback",
+										"title": "How to check player stats",
+										"payload": "InstructStats",
+									}
+								],
+							}]
+						}
+					}
+				}
+				callSendAPI(sender_psid, response); 
+			break
+		case SHOW_PLAYER_STATS:
 			var playersFromTextList = message.toLowerCase().match(/@\w+/g)
 			var playersList = []
 			console.log(playersList)
@@ -493,14 +547,17 @@ function handleMessage(sender_psid, received_message) {
 					}
 					
 					callSendAPI(sender_psid, response) 
+					break
 				});
 			} else {
 					response = {
 						"text": "I dont understand, you did not specify any players. \nPlease reference players in the format: \n@FirstNameLastName"
 					}
 					callSendAPI(sender_psid, response) 
+					break
 			}
-		} else if(message.toLowerCase().includes('teams')) {
+			
+		case SHOW_USER_TEAMS:
 			getUserTeams(sender_psid, function(userTeams) {
 				if(userTeams.length > 0) {
 					response = {
@@ -512,12 +569,14 @@ function handleMessage(sender_psid, received_message) {
 					}
 				}
 				callSendAPI(sender_psid, response) 
+				break
 			});
-			
-		} else if(message.toLowerCase().includes('games')) {
+
+		case SHOW_ALL_GAMES:
+		case SHOW_USER_GAMES:
 			getUserTeams(sender_psid, function(result) {
 				console.log("User Teams: " + result)
-				var showAllGames = (message.toLowerCase().includes('all')) ? true : false;
+				var showAllGames = (descisionMade == SHOW_ALL_GAMES) ? true : false;
 				var datetime = moment();	
 				var date =  datetime.tz('America/New_York').format('YYYYMMDD')
 				console.log("Moment Date: "+ datetime.tz('America/New_York').format('YYYYMMDD'))
@@ -528,11 +587,11 @@ function handleMessage(sender_psid, received_message) {
 					var gameListFormat
 					for(var i = 0; i < games.length; i++){
 						if(i == 0){
-							//gameListFormat = "Game  #" + (i + 1) + ": " + games[i]  + " \n"
-							gameListFormat = games[i]  + " \n"
+							gameListFormat = "Game  #" + (i + 1) + ": " + games[i]  + " \n"
+							//gameListFormat = games[i]  + " \n"
 						} else {
-							//gameListFormat += "Game  #" + (i + 1) + ": " + games[i]  + " \n"
-							gameListFormat += games[i]  + " \n"
+							gameListFormat += "Game  #" + (i + 1) + ": " + games[i]  + " \n"
+							//gameListFormat += games[i]  + " \n"
 						}
 						//console.log("Response text:" + gameListFormat)
 					}
@@ -547,9 +606,11 @@ function handleMessage(sender_psid, received_message) {
 					}
 					console.log("Final Response text:" + gameListFormat)
 					callSendAPI(sender_psid, response) 
+					break
 				});
 			});
-		} else if (message.toLowerCase().includes('unsubscribe')) {
+			
+		case UNSUBSCRIBE_TEAMS:
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
 			var teamList = []
 			console.log(teamCodeFromTextList)
@@ -571,15 +632,17 @@ function handleMessage(sender_psid, received_message) {
 						} 
 					}
 					callSendAPI(sender_psid, response) 
+					break
 				});
 			} else {
 				response = {
 					"text": "No teams were deleted from your subscribers List please put in format: @TeamCode(triCode)"
 				} 
 				callSendAPI(sender_psid, response) 
+				break
 			}
-
-		} else if (message.toLowerCase().includes('subscribe')){
+			
+		case SUBSCRIBE_TEAMS:
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
 			var teamList = []
 			console.log(teamCodeFromTextList)
@@ -601,25 +664,40 @@ function handleMessage(sender_psid, received_message) {
 						} 
 					}
 					callSendAPI(sender_psid, response) 
+					break
 				});
 			} else {
 				response = {
 					"text": "No teams retrieved from message please put in format: @TeamCode(triCode)"
 				} 
 				callSendAPI(sender_psid, response) 
+				break
 			}
-		} else {
+		case NO_DECISION:
 			response = {
 				"text": "You sent the message: " + received_message.text + ". I do not understand it :("
 			}
 			callSendAPI(sender_psid, response) 
-		}
+			break
 	}
 }
 
 // Handles messaging_postbacks events
 function handlePostback(sender_psid, received_postback) {
-	
+	  let response;
+  
+	  // Get the payload for the postback
+	  let payload = received_postback.payload;
+
+	  // Set the response based on the postback payload
+	  if (payload === 'InstructSub') {
+		response = { "text": "To Subscribe to teams that you would like to follow just tell \nme to 'subscribe' to any team using the '@' symbol \nFor example: Subscribe to @Raptors" }
+	  } else if (payload === 'InstructUnsub') {
+		response = { "text": "To Subscribe to teams that you would like to follow just tell \nme to 'unsubscribe' to any team using the '@' symbol \nFor example: Unsubscribe from @Cleveland" }
+	  } else if (payload === 'InstructStats') {
+		response = { "text": "To check this years stats for a certain player just ask me \nby giving me the player name with the '@' symbol \nFor example: 'Show me the stats for @LonzoBall'" }
+	  }
+	  callSendAPI(sender_psid, response);
 }
 
 // Sends response messages via the Send API
