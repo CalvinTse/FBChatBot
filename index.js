@@ -481,7 +481,7 @@ function handleMessage(sender_psid, received_message) {
 		}
 		
 		var maxValue = decisions[0]
-		for(var i = 0; i < decisions.length(); i++){
+		for(var i = 0; i < decisions.length; i++){
 			if(maxValue < decisions[i]) {
 				descisionMade = i
 			}
