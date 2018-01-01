@@ -440,12 +440,13 @@ function handleMessage(sender_psid, received_message) {
 	var SUBSCRIBE_TEAMS = 5
 	var UNSUBSCRIBE_TEAMS = 6
 	var COMPARE_PLAYERS = 7
-	var NO_DECISION = 8
+	var USER_THANKS = 8
+	var NO_DECISION = 9
 	
     let response;
 	var userGameList;
 	var message = received_message.text;
-	var decisions = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+	var decisions = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	var descisionMade = GREET_USER
 	
 	if(message) {
@@ -468,6 +469,8 @@ function handleMessage(sender_psid, received_message) {
 				} else if (messageTokenLowerCase[i].includes('subscribe')) {
 					if (messageTokenLowerCase[i].includes('unsubscribe')) {
 						decisions[UNSUBSCRIBE_TEAMS] += 3
+					} else if(messageTokenLowerCase[i].includes('subscribed')) {
+						decisions[SHOW_USER_TEAMS] += 1
 					} else {
 						decisions[SUBSCRIBE_TEAMS] += 3
 					}
@@ -479,6 +482,8 @@ function handleMessage(sender_psid, received_message) {
 				} else if(messageTokenLowerCase[i].includes('today')) {
 					decisions[SHOW_USER_GAMES] += 1
 					decisions[SHOW_ALL_GAMES] += 1
+				} else if(messageTokenLowerCase[i].includes('thank')) {
+					decisions[USER_THANKS] += 1.5
 				}
 			}
 		}
@@ -489,6 +494,9 @@ function handleMessage(sender_psid, received_message) {
 				maxValue = decisions[i]
 				descisionMade = i
 			}
+		}
+		if(descisionMade == GREET_USER && maxValue == 0) {
+			descisionMade = NO_DECISION
 		}
 	}
 	console.log("DESCISION: " + descisionMade)
@@ -557,7 +565,7 @@ function handleMessage(sender_psid, received_message) {
 				});
 			} else {
 					response = {
-						"text": "I dont understand, you did not specify any players. \nPlease reference players in the format: \n@FirstNameLastName"
+						"text": "I dont understand, you did not specify any players. \nPlease reference players like this: \n@FirstNameLastName"
 					}
 					callSendAPI(sender_psid, response) 
 			}
@@ -571,7 +579,7 @@ function handleMessage(sender_psid, received_message) {
 					}
 				} else {
 					response = {
-						"text": "You arent subscribed to any teams right now.\nTo subscribe type in 'subscribe' and '@TeamTriCode'"
+						"text": "You arent subscribed to any teams right now.\nTo subscribe tell me to 'subscribe'  '@YourTeamName'"
 					}
 				}
 				callSendAPI(sender_psid, response) 
@@ -617,7 +625,7 @@ function handleMessage(sender_psid, received_message) {
 							}
 						} else {
 							response = {
-								"text": "The games I found that are happening on "+ datetime.tz('America/New_York').format('MMMM Do YYYY') +" are: \n" + gameListFormat
+								"text": "The games I found for you that are happening on "+ datetime.tz('America/New_York').format('MMMM Do YYYY') +" are: \n" + gameListFormat
 							}
 						}
 						console.log("Final Response text:" + gameListFormat)
@@ -739,10 +747,15 @@ function handleMessage(sender_psid, received_message) {
 				callSendAPI(sender_psid, response) 
 			}
 			break
-			
+		case USER_THANKS:
+			response = {
+				"text": "Glad I can help! :D"
+			}
+			callSendAPI(sender_psid, response) 
+			break
 		case NO_DECISION:
 			response = {
-				"text": "You sent the message: " + received_message.text + ". I do not understand it :("
+				"text": "I do not understand what you are trying to tell me :("
 			}
 			callSendAPI(sender_psid, response) 
 			break
