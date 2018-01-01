@@ -283,6 +283,22 @@ function getSelectedPlayersStats(playersList, callback) {
 	});
 }
 
+function getUserGreeting(senderId, callback) {
+	fetch(`https://graph.facebook.com/v2.6/${senderId}?fields=first_name,last_name,profile_pic&access_token=EAACSGKoj1PkBALlvGcLdgvERHXkq1PdC3ZBAUZB5w08yiq36X6ywqlwoBupYwPTR6jLXeIZCMltUZA6za7zKbZBiFf6RJgXF0Izdc0yPZBKqZCWZB5am8kjdy7qHrl3Jv4EPIaWre50vIwL4pdixBnkUUIZBIEZCwYNjuMRU3QaVZAFlOHRNEdohI4C`)
+	.then(response => {
+		response.json().then(json => {
+			console.log(json)
+			if(json.first_name !== undefined) {
+				callback("Hey " + json.first_name!)
+			} else {
+				callback("Hey There!")
+			}
+		});
+	}) .catch(error => {
+		console.log(error);
+	});
+}
+
 app.use(express.static(path.join(__dirname, 'Regna')));
 
 // Sets server port and loWgs message on success
@@ -313,9 +329,10 @@ app.get('/nbaPlayers', function(req, res) {
 });
 
 app.get('/nba', function(req, res) {
+	getUserInfo('1400709970026915')
 });
 
-app.get('/nbaTeams', function(req, res) {
+app.get('/addNbaTeams', function(req, res) {
 	var teamsToAdd = ["CHI", "TORONTO", "TOR", "BULLS"]
 	addUserTeams("TEST1",teamsToAdd, function(teamsAdded) {
 		if(teamsAdded.length > 0) {
@@ -477,36 +494,38 @@ function handleMessage(sender_psid, received_message) {
 	console.log("DESCISION: " + descisionMade)
 	switch(descisionMade) {
 		case GREET_USER:
-			    response = {
-					"attachment": {
-						"type": "template",
-						"payload": {
-							"template_type": "generic",
-							"elements": [{
-								"title": "Hello! My name is LeStats",
-								"subtitle": "I am here to give you updates on games and player stats from the NBA :D",
-								"buttons": [
-									{
-										"type": "postback",
-										"title": "How to Subcribe",
-										"payload": "InstructSub",
-									},
-									{
-										"type": "postback",
-										"title": "How to Unsubcribe",
-										"payload": "InstructUnsub",
-									},
-									{
-										"type": "postback",
-										"title": "How to check stats",
-										"payload": "InstructStats",
-									}
-								],
-							}]
+			getUserGreeting(senderId, function(greeting) {
+					response = {
+						"attachment": {
+							"type": "template",
+							"payload": {
+								"template_type": "generic",
+								"elements": [{
+									"title": greeting + " My name is LeStats",
+									"subtitle": "I am here to give you updates on games and player stats from the NBA :D",
+									"buttons": [
+										{
+											"type": "postback",
+											"title": "How to Subcribe",
+											"payload": "InstructSub",
+										},
+										{
+											"type": "postback",
+											"title": "How to Unsubcribe",
+											"payload": "InstructUnsub",
+										},
+										{
+											"type": "postback",
+											"title": "How to check stats",
+											"payload": "InstructStats",
+										}
+									],
+								}]
+							}
 						}
 					}
-				}
-				callSendAPI(sender_psid, response); 
+					callSendAPI(sender_psid, response); 
+			});
 			break
 			
 		case SHOW_PLAYER_STATS:
