@@ -383,6 +383,7 @@ app.post('/webhook', (req, res) => {
             //Gets the sender PSID
             let sender_psid = webhookEvent.sender.id;
             console.log('Sender PSID: ' + sender_psid);
+			console.log('nlp: ' + webhookEvent.message.nlp);
 
             if (webhookEvent.message) {
                 handleMessage(sender_psid, webhookEvent.message);
