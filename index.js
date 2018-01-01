@@ -385,7 +385,7 @@ app.post('/webhook', (req, res) => {
             console.log('Sender PSID: ' + sender_psid);
 
             if (webhookEvent.message) {
-				console.log('nlp: ' + webhookEvent.message.nlp.entities);
+				//console.log('nlp: ' + webhookEvent.message.nlp.entities);
                 handleMessage(sender_psid, webhookEvent.message);
             } else if (webhookEvent.postback) {
 				handlePostback(sender_psid, webhookEvent.postback);
