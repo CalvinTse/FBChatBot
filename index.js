@@ -12,11 +12,11 @@ var moment = require('moment')
 var timeZone = require('moment-timezone')
 
 var con = mysql.createConnection({
-    host: "chatdbinstance.cdye1p7zziwn.us-east-2.rds.amazonaws.com",
-    user: "admin",
-    password: "calvin1811",
-    port: "3306",
-    database: "ChatDB"
+    host: "*****************************************",
+    user: "*******",
+    password: "******",
+    port: "*****",
+    database: "******"
 });
 
 function createTables(){
@@ -34,6 +34,7 @@ function createTables(){
 	});
 }
 
+//Query DB to add user teams
 function setUserSubs(addTeams){
 	var query = "INSERT INTO USER_SUBS (name, playerID) VALUES ?"
 	
@@ -43,6 +44,7 @@ function setUserSubs(addTeams){
 	});
 }
 
+//Query the deltion for user unsubscribe
 function deleteUserSubs(senderId, deleteTeam){
 	var query = `DELETE FROM USER_SUBS WHERE name = '${senderId}' AND playerID = '${deleteTeam}'`
 	
@@ -52,9 +54,10 @@ function deleteUserSubs(senderId, deleteTeam){
 	});
 }
 
+//Query DB to get User Names
 function getUserTeams(senderId, callback){
 	var sqlQuery = `SELECT * FROM USER_SUBS where name = \'${senderId}\'`
-	//console.log("SQL: " + sqlQuery)
+	
 	con.query(sqlQuery, function(err, results, fields) {
 		var userTeams = []
 		if (err) throw err;
@@ -73,6 +76,8 @@ function getUserTeams(senderId, callback){
 	});
 }
 
+
+//Get nba teams by name city and id
 function getNbaTeams(year, callback){
 	fetch(`http://data.nba.net/data/10s/prod/v1/${year}/teams.json`)
 	.then(response => {
@@ -97,6 +102,7 @@ function getNbaTeams(year, callback){
 	 });
 }
 
+//Handles the unsubscribe message 
 function deleteUserTeams(senderId, userTeamsList, callback){
 	getNbaTeams('2017', function(nbaTeamsCodes, nbaCities, nbaNicknames){
 		getUserTeams(senderId, function(userTeams) {
@@ -141,6 +147,7 @@ function deleteUserTeams(senderId, userTeamsList, callback){
 	});
 }
 
+//Handles the subcription to teams that the user specifies
 function addUserTeams(senderId, userTeamsList, callback){
 	getNbaTeams('2017', function(nbaTeamsCodes, nbaCities, nbaNicknames){
 		getUserTeams(senderId, function(userTeams) {
@@ -221,7 +228,7 @@ function getGameScores(date, teams, showAllGames, callback){
 		console.log(error);
 	 });
 }
-
+//Gets player ids and determines if the user specified player actually exists
 function getPlayers(year, playersList, callback){
 	fetch(`http://data.nba.net/data/10s/prod/v1/${year}/players.json`)
 	.then(response => {
@@ -244,6 +251,7 @@ function getPlayers(year, playersList, callback){
 	 });
 }
 
+//gets individual player stats by calling specfic endpoints
 function getPlayerStats(playerId, playerName, callback) {	
 	fetch(`http://data.nba.net/data/10s/prod/v1/2017/players/${playerId}_profile.json`)
 	.then(response => {
@@ -261,6 +269,8 @@ function getPlayerStats(playerId, playerName, callback) {
 	});
 }
 
+
+//Gets the user stats specified by the user in a array
 function getSelectedPlayersStats(playersList, callback) {
 	var playerListLowerCase = []
 	for(var i = 0;  i < playersList.length; i++){
@@ -283,6 +293,8 @@ function getSelectedPlayersStats(playersList, callback) {
 	});
 }
 
+
+//Gets the Users first name if allowed for personlized communication
 function getUserGreeting(senderId, callback) {
 	fetch(`https://graph.facebook.com/v2.6/${senderId}?fields=first_name,last_name,profile_pic&access_token=EAACSGKoj1PkBALuryot7HFXqy9bGZCM6YTZC1pAIyRQX7vY1CtSnMtM49f97tvSCJiOuCQGk0q7sXQakVrl5LwvNZBCunu1AcG59yCNVIeGYkFbJPRjewKnXdRsWRbGNY4lkBPeWzvLCmoEWZAZCysZBtdG4R86BM6u4egfLIJZAklPE8xH9SZCA`)
 	.then(response => {
@@ -298,6 +310,9 @@ function getUserGreeting(senderId, callback) {
 		console.log(error);
 	});
 }
+
+
+////////////////////////Local Development Code////////////////////////////////////
 
 app.use(express.static(path.join(__dirname, 'Regna')));
 
@@ -361,7 +376,9 @@ app.get('/', function(req, res) {
     res.render("index.html")
 });
 
-//app.use('/Regna', express.static(__dirname + '/Regna'));
+
+//////////////////ENDPOINTS FOR MESSENGER APP///////////////////////////////////////
+
 // Creates the endpoint for our webhook 
 app.post('/webhook', (req, res) => {
 
@@ -451,6 +468,8 @@ function handleMessage(sender_psid, received_message) {
 	var decisions = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
 	var descisionMade = GREET_USER
 	
+	//Tokenizes the message and looks for specific keywords which will contribute to a score 
+	//This will decide the response the user will get based on the highest score 
 	if(message) {
 		var messageTokenLowerCase = message.toLowerCase().match(/\w+/g)
 		if(messageTokenLowerCase !== undefined) {
@@ -502,7 +521,10 @@ function handleMessage(sender_psid, received_message) {
 		}
 	}
 	console.log("DESCISION: " + descisionMade)
+	
+	//Based on the decision the response will pass through a specfic method
 	switch(descisionMade) {
+		//For greeting and displaying instructions for user
 		case GREET_USER:
 			getUserGreeting(sender_psid, function(greeting) {
 					response = {
@@ -537,7 +559,8 @@ function handleMessage(sender_psid, received_message) {
 					callSendAPI(sender_psid, response); 
 			});
 			break
-			
+		
+		//Shows the stats of the specfic players specified by the user
 		case SHOW_PLAYER_STATS:
 			var playersFromTextList = message.toLowerCase().match(/@\w+/g)
 			var playersList = []
@@ -573,6 +596,7 @@ function handleMessage(sender_psid, received_message) {
 			}
 			break
 		
+		//Shows the teams that the user is subscribed to
 		case SHOW_USER_TEAMS:
 			getUserTeams(sender_psid, function(userTeams) {
 				if(userTeams.length > 0) {
@@ -588,6 +612,7 @@ function handleMessage(sender_psid, received_message) {
 			});
 			break
 			
+		//Shows the games that thw user specifes	
 		case SHOW_ALL_GAMES:
 		case SHOW_USER_GAMES:
 			var teamsFromTextList = message.toUpperCase().match(/@\w+/g)
@@ -705,7 +730,8 @@ function handleMessage(sender_psid, received_message) {
 				});
 			}
 			break
-			
+		
+		//Unsubscribes to the teams that the user specfies
 		case UNSUBSCRIBE_TEAMS:
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
 			var teamList = []
@@ -736,7 +762,8 @@ function handleMessage(sender_psid, received_message) {
 				callSendAPI(sender_psid, response) 
 			}
 			break
-			
+		
+		//Subscribes to the team that the user specifies
 		case SUBSCRIBE_TEAMS:
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
 			var teamList = []
@@ -767,12 +794,16 @@ function handleMessage(sender_psid, received_message) {
 				callSendAPI(sender_psid, response) 
 			}
 			break
+			
+		//Handles the response for a gratitude	
 		case USER_THANKS:
 			response = {
 				"text": "Glad I can help! :D"
 			}
 			callSendAPI(sender_psid, response) 
 			break
+			
+		//This will handle whatever it cannot get	
 		case NO_DECISION:
 			response = {
 				"text": "I do not understand what you are trying to tell me :("
