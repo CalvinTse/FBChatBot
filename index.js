@@ -521,6 +521,7 @@ function handleMessage(sender_psid, received_message) {
 				}
 				callSendAPI(sender_psid, response); 
 			break
+			
 		case SHOW_PLAYER_STATS:
 			var playersFromTextList = message.toLowerCase().match(/@\w+/g)
 			var playersList = []
@@ -547,16 +548,15 @@ function handleMessage(sender_psid, received_message) {
 					}
 					
 					callSendAPI(sender_psid, response) 
-					break
 				});
 			} else {
 					response = {
 						"text": "I dont understand, you did not specify any players. \nPlease reference players in the format: \n@FirstNameLastName"
 					}
 					callSendAPI(sender_psid, response) 
-					break
 			}
-			
+			break
+		
 		case SHOW_USER_TEAMS:
 			getUserTeams(sender_psid, function(userTeams) {
 				if(userTeams.length > 0) {
@@ -569,9 +569,9 @@ function handleMessage(sender_psid, received_message) {
 					}
 				}
 				callSendAPI(sender_psid, response) 
-				break
 			});
-
+			break
+			
 		case SHOW_ALL_GAMES:
 		case SHOW_USER_GAMES:
 			getUserTeams(sender_psid, function(result) {
@@ -606,9 +606,9 @@ function handleMessage(sender_psid, received_message) {
 					}
 					console.log("Final Response text:" + gameListFormat)
 					callSendAPI(sender_psid, response) 
-					break
 				});
 			});
+			break
 			
 		case UNSUBSCRIBE_TEAMS:
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
@@ -632,15 +632,14 @@ function handleMessage(sender_psid, received_message) {
 						} 
 					}
 					callSendAPI(sender_psid, response) 
-					break
 				});
 			} else {
 				response = {
 					"text": "No teams were deleted from your subscribers List please put in format: @TeamCode(triCode)"
 				} 
 				callSendAPI(sender_psid, response) 
-				break
 			}
+			break
 			
 		case SUBSCRIBE_TEAMS:
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
@@ -664,15 +663,15 @@ function handleMessage(sender_psid, received_message) {
 						} 
 					}
 					callSendAPI(sender_psid, response) 
-					break
 				});
 			} else {
 				response = {
 					"text": "No teams retrieved from message please put in format: @TeamCode(triCode)"
 				} 
 				callSendAPI(sender_psid, response) 
-				break
 			}
+			break
+			
 		case NO_DECISION:
 			response = {
 				"text": "You sent the message: " + received_message.text + ". I do not understand it :("
