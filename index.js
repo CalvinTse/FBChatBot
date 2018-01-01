@@ -317,10 +317,11 @@ app.get('/nba', function(req, res) {
 	getUserTeams("TEST1", function(result) {
 		console.log("User Teams: " + result)
 		var showAllGames =  false ;
-		var datetime = new Date();
+		var datetime = moment();	
 		
-		var date = datetime.getFullYear()+ '' + (datetime.getMonth()+1) + '' + datetime.getDate()
-		//console.log("Date: "+ datetime)
+		var date = datetime.tz('America/New_York').format('YYYYMMDD')
+		
+		console.log("Date: "+ date)
 		getGameScores(date, result, showAllGames, function(games){
 			userGameList = games
 			var gameListFormat
@@ -607,7 +608,7 @@ function handleMessage(sender_psid, received_message) {
 						}
 					} else {
 						response = {
-							"text": "Games Chosen: \n" + gameListFormat
+							"text": "The games I found that are happening on "+ datetime.tz('America/New_York').format('MMMM Do YYYY') +" are: \n" + gameListFormat
 						}
 					}
 					console.log("Final Response text:" + gameListFormat)
