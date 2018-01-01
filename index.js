@@ -494,7 +494,7 @@ function handleMessage(sender_psid, received_message) {
 	console.log("DESCISION: " + descisionMade)
 	switch(descisionMade) {
 		case GREET_USER:
-			getUserGreeting(senderId, function(greeting) {
+			getUserGreeting(sender_psid, function(greeting) {
 					response = {
 						"attachment": {
 							"type": "template",
