@@ -329,7 +329,9 @@ app.get('/nbaPlayers', function(req, res) {
 });
 
 app.get('/nba', function(req, res) {
-	getUserInfo('1400709970026915')
+	var datetime = moment();	
+	var date =  datetime.tz('America/New_York').subtract(1, 'days').format('YYYYMMDD')
+	console.log("Moment Date: "+ datetime.tz('America/New_York').format('YYYYMMDD'))
 });
 
 app.get('/addNbaTeams', function(req, res) {
@@ -601,11 +603,20 @@ function handleMessage(sender_psid, received_message) {
 				getUserTeams(sender_psid, function(result) {
 					console.log("User Teams: " + result)
 					var showAllGames = (descisionMade == SHOW_ALL_GAMES) ? true : false;
-					var datetime = moment();	
-					var date =  datetime.tz('America/New_York').format('YYYYMMDD')
+					var datetime = moment();
+					var date
+					
+					if(message.toLowerCase().includes("yesterday")) {
+						date =  datetime.tz('America/New_York').subtract(1, 'days')
+					}	else if (message.toLowerCase().includes("tomorrow") || message.toLowerCase().includes("tmr")) {
+						date =  datetime.tz('America/New_York').add(1, 'days')
+					} else {
+						date =  datetime.tz('America/New_York')
+					}	
+					
 					console.log("Moment Date: "+ datetime.tz('America/New_York').format('YYYYMMDD'))
 					console.log("showAllGames " + showAllGames)
-					getGameScores(date, result, showAllGames, function(games){
+					getGameScores(date.format('YYYYMMDD'), result, showAllGames, function(games){
 						//userGameList = games
 						console.log("Return games: "+ games)
 						var gameListFormat
@@ -625,7 +636,7 @@ function handleMessage(sender_psid, received_message) {
 							}
 						} else {
 							response = {
-								"text": "The games I found for you that are happening on "+ datetime.tz('America/New_York').format('MMMM Do YYYY') +" are: \n" + gameListFormat
+								"text": "The games I found for you that are happening on "+ date.format('MMMM Do YYYY') +" are: \n" + gameListFormat
 							}
 						}
 						console.log("Final Response text:" + gameListFormat)
@@ -654,9 +665,18 @@ function handleMessage(sender_psid, received_message) {
 					}
 					
 					var datetime = moment();	
-					var date =  datetime.tz('America/New_York').format('YYYYMMDD')
+					var date
+					
+					if(message.toLowerCase().includes("yesterday")) {
+						date =  datetime.tz('America/New_York').subtract(1, 'days')
+					}	else if (message.toLowerCase().includes("tomorrow") || message.toLowerCase().includes("tmr")) {
+						date =  datetime.tz('America/New_York').add(1, 'days')
+					} else {
+						date =  datetime.tz('America/New_York')
+					}	
+					
 					console.log("Moment Date: "+ datetime.tz('America/New_York').format('YYYYMMDD'))
-					getGameScores(date, teamGamesToSearch, false, function(games){
+					getGameScores(date.format('YYYYMMDD'), teamGamesToSearch, false, function(games){
 						//userGameList = games
 						console.log("Return games: "+ games)
 						var gameListFormat
@@ -676,7 +696,7 @@ function handleMessage(sender_psid, received_message) {
 							}
 						} else {
 							response = {
-								"text": "The games I found that are happening on "+ datetime.tz('America/New_York').format('MMMM Do YYYY') +" are: \n" + gameListFormat
+								"text": "The games I found that are happening on "+ date.format('MMMM Do YYYY') +" are: \n" + gameListFormat
 							}
 						}
 						console.log("Final Response text:" + gameListFormat)
