@@ -445,7 +445,7 @@ function handleMessage(sender_psid, received_message) {
 	var userGameList;
 	var message = received_message.text;
 	var decisions = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-	var descisionMade
+	var descisionMade = GREET_USER
 	
 	if(message) {
 		var messageTokenLowerCase = message.toLowerCase().match(/\w+/g)
@@ -456,8 +456,8 @@ function handleMessage(sender_psid, received_message) {
 				} else if(messageTokenLowerCase[i].includes('stats')) {
 					decisions[SHOW_PLAYER_STATS] += 3
 				} else if (messageTokenLowerCase[i].includes('teams')) {
-					decisions[UNSUBSCRIBE_TEAMS] += 1.5
-					decisions[SUBSCRIBE_TEAMS] += 1.5
+					decisions[UNSUBSCRIBE_TEAMS] += 0.5
+					decisions[SUBSCRIBE_TEAMS] += 0.5
 					decisions[SHOW_USER_GAMES] += 0.5
 					decisions[SHOW_ALL_GAMES] += 0.5
 					decisions[SHOW_USER_TEAMS] += 1.5
