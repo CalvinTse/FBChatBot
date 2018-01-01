@@ -479,6 +479,8 @@ function handleMessage(sender_psid, received_message) {
 				} else if (messageTokenLowerCase[i].includes('my')) {
 					decisions[SHOW_USER_TEAMS] += 1
 					decisions[SHOW_USER_GAMES] += 1
+				} else if (messageTokenLowerCase[i].includes('all')) {
+					decisions[SHOW_ALL_GAMES] += 1.5
 				} else if(messageTokenLowerCase[i].includes('today')) {
 					decisions[SHOW_USER_GAMES] += 1
 					decisions[SHOW_ALL_GAMES] += 1
