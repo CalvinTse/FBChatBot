@@ -289,7 +289,7 @@ function getUserGreeting(senderId, callback) {
 		response.json().then(json => {
 			console.log(json)
 			if(json.first_name !== undefined) {
-				callback("Hey " + json.first_name!)
+				callback("Hey " + json.first_name + "!")
 			} else {
 				callback("Hey There!")
 			}
