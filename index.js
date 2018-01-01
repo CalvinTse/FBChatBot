@@ -521,7 +521,7 @@ function handleMessage(sender_psid, received_message) {
 					}
 				}
 				callSendAPI(sender_psid, response); 
-			//break
+			break
 			
 		case SHOW_PLAYER_STATS:
 			var playersFromTextList = message.toLowerCase().match(/@\w+/g)
@@ -556,7 +556,7 @@ function handleMessage(sender_psid, received_message) {
 					}
 					callSendAPI(sender_psid, response) 
 			}
-			//break
+			break
 		
 		case SHOW_USER_TEAMS:
 			getUserTeams(sender_psid, function(userTeams) {
@@ -571,7 +571,7 @@ function handleMessage(sender_psid, received_message) {
 				}
 				callSendAPI(sender_psid, response) 
 			});
-			//break
+			break
 			
 		case SHOW_ALL_GAMES:
 		case SHOW_USER_GAMES:
@@ -609,7 +609,7 @@ function handleMessage(sender_psid, received_message) {
 					callSendAPI(sender_psid, response) 
 				});
 			});
-			//break
+			break
 			
 		case UNSUBSCRIBE_TEAMS:
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
@@ -640,7 +640,7 @@ function handleMessage(sender_psid, received_message) {
 				} 
 				callSendAPI(sender_psid, response) 
 			}
-			//break
+			break
 			
 		case SUBSCRIBE_TEAMS:
 			var teamCodeFromTextList = message.toUpperCase().match(/@\w+/g)
@@ -671,14 +671,14 @@ function handleMessage(sender_psid, received_message) {
 				} 
 				callSendAPI(sender_psid, response) 
 			}
-			//break
+			break
 			
 		case NO_DECISION:
 			response = {
 				"text": "You sent the message: " + received_message.text + ". I do not understand it :("
 			}
 			callSendAPI(sender_psid, response) 
-			//break
+			break
 	}
 }
 
