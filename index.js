@@ -377,6 +377,7 @@ app.post('/webhook', (req, res) => {
 
             // Gets the message. entry.messaging is an array, but 
             // will only ever contain one message, so we get index 0
+			console.log("webhookEvent " + entry);
             let webhookEvent = entry.messaging[0];
             console.log(webhookEvent);
 
@@ -384,7 +385,8 @@ app.post('/webhook', (req, res) => {
             let sender_psid = webhookEvent.sender.id;
             console.log('Sender PSID: ' + sender_psid);
 
-            if (webhookEvent.message) {
+			//Page id for postbacks
+            if (webhookEvent.message && sender_psid !== '164855247442750') {
 				//console.log('nlp: ' + webhookEvent.message.nlp.entities);
                 handleMessage(sender_psid, webhookEvent.message);
             } else if (webhookEvent.postback) {
@@ -498,21 +500,21 @@ function handleMessage(sender_psid, received_message) {
 							"template_type": "generic",
 							"elements": [{
 								"title": "Hello! My name is LeStats",
-								"subtitle": "I am here to give you updates on games and player stats from the NBA \nHere are some things that you can ask me :D",
+								"subtitle": "I am here to give you updates on games and player stats from the NBA :D",
 								"buttons": [
 									{
 										"type": "postback",
-										"title": "How to Subcribe to Teams",
+										"title": "How to Subcribe",
 										"payload": "InstructSub",
 									},
 									{
 										"type": "postback",
-										"title": "How to Unsubcribe to Teams",
+										"title": "How to Unsubcribe",
 										"payload": "InstructUnsub",
 									},
 									{
 										"type": "postback",
-										"title": "How to check player stats",
+										"title": "How to check stats",
 										"payload": "InstructStats",
 									}
 								],
